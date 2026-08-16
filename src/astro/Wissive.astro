@@ -1,0 +1,79 @@
+---
+// Wrapper oficial para Astro — `import Wissive from 'wissive/astro'`.
+// Export default, no nombrado: así es como Astro compila el template de un
+// .astro (no hay forma de darle un export nombrado tipo React/Vue).
+//
+// A diferencia de react.tsx/vue.ts, esto no resuelve un problema de timing
+// (Astro no tiene virtual DOM: el <script> de abajo ya corre client-side
+// sin ceremonia, como en examples/astro/wissive-demo.astro). Resuelve dos
+// cosas: repetición (no copiar el <script> en cada página) y el hueco
+// vacío mientras carga el JS — renderiza el primer frame en el server.
+// Import por nombre de paquete, no relativo: este .astro se publica como
+// fuente sin compilar (Astro no tiene un target de build tipo Vite lib acá),
+// así que solo empaquetamos este archivo — no todo src/ — y confiamos en
+// que el consumidor ya tiene 'wissive' resuelto en su propio node_modules.
+import type { WissiveOptions } from 'wissive';
+import { getEmojiDefinition, buildFace, resolveSize } from 'wissive';
+
+export interface Props extends Omit<WissiveOptions, 'target'> {
+  name: string;
+}
+
+const { name, ...options } = Astro.props;
+
+// Primer frame renderizado en el server (buildFace es una función pura,
+// sin document/window — corre en Node sin problema). Es una aproximación:
+// usa la variante [0] del pool de idle, no la que el cliente sortea al
+// montar, y sin el wobble de personalidad (eso depende de idleTime, que
+// solo existe una vez arranca el loop de animación). Alcanza para evitar
+// el hueco vacío y el salto de layout — no hace falta que sea pixel-exacto,
+// createEmoji() reemplaza este frame apenas pinta el suyo (ver script).
+const def = getEmojiDefinition(name);
+const size = resolveSize(options.size);
+const initialParams = def.expressions.idle[0];
+const ssrSvg = buildFace(def.silhouette, def.baseColor, initialParams, size, {}, 0);
+---
+<div class="wissive-wrap" style={`width:${size}px;height:${size}px`}>
+  <div class="wissive-ssr" set:html={ssrSvg} />
+  <div class="wissive-slot" data-name={name} data-options={JSON.stringify(options)}></div>
+</div>
+
+<script>
+  import { createEmoji, type WissiveInstance } from 'wissive';
+
+  function initSlots(root: ParentNode = document) {
+    root.querySelectorAll<HTMLElement>('.wissive-slot:not([data-wissive-init])').forEach((slot) => {
+      slot.dataset.wissiveInit = 'true';
+      const name = slot.dataset.name!;
+      const options = JSON.parse(slot.dataset.options || '{}');
+      const instance: WissiveInstance = createEmoji(name, { target: slot, ...options });
+
+      // createEmoji tarda un requestAnimationFrame en pintar su primer
+      // frame real (sharedLoop.add corre en el próximo tick, no ahora
+      // mismo) — el doble rAF espera a que ese frame ya esté pintado antes
+      // de sacar el frame estático del server, así el swap no se nota.
+      const ssr = slot.parentElement?.querySelector<HTMLElement>('.wissive-ssr');
+      requestAnimationFrame(() => requestAnimationFrame(() => ssr?.remove()));
+
+      // View Transitions reemplaza el DOM sin recargar la página — sin
+      // esto, cada navegación deja el RAF y los listeners de la instancia
+      // anterior colgando.
+      document.addEventListener('astro:before-swap', () => instance.destroy(), { once: true });
+    });
+  }
+
+  initSlots();
+  document.addEventListener('astro:page-load', () => initSlots());
+</script>
+
+<style>
+  .wissive-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .wissive-ssr,
+  .wissive-slot {
+    position: absolute;
+    inset: 0;
+  }
+</style>

@@ -1,0 +1,15 @@
+---
+interface Props {
+  id?: string;
+  codeId?: string;
+  dataFwSlot?: string;
+  code?: string;
+}
+
+const { id, codeId, dataFwSlot, code } = Astro.props;
+---
+
+<div class="code-block" id={id} data-fw-slot={dataFwSlot}>
+  <button class="copy-btn" type="button">Copiar</button>
+  <pre><code id={codeId}>{code ? code : <slot />}</code></pre>
+</div>

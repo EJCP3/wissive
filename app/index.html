@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wissive — Emojis vivos</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-light: #ffffff;
+      --bg-docs: #f5f5fa;
+      --bg-card: #ffffff;
+      --bg-code: #ffffff;
+      --bg-inline-code: #e8eaee;
+      --border-code: rgba(0, 0, 0, 0.08);
+      --shadow-code: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --border-soft: rgba(0, 0, 0, 0.09);
+      --text-dark: #18181b;
+      --text-sub: #71717a;
+      --accent: #f2a9b8;
+      --link-accent: #6d5ff0;
+      --nav-surface: rgba(255, 255, 255, 0.85);
+      --pill-active-bg: #18181b;
+      --pill-active-fg: #ffffff;
+      --pill-soft-bg: #efefe6;
+      /* Syntax highlighting, ver highlightCode() al final del script */
+      --tok-kw: #c2410c;
+      --tok-str: #15803d;
+      --tok-com: #a1a1aa;
+    }
+
+    /* Modo oscuro: sigue prefers-color-scheme por default, y el toggle del
+       header fuerza data-theme (guardado en localStorage) por encima. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg-light: #1c1c22;
+        --bg-docs: #0b0b0f;
+        --bg-card: #1c1c22;
+        --bg-code: #141419;
+        --bg-inline-code: rgba(255, 255, 255, 0.08);
+        --border-code: rgba(255, 255, 255, 0.12);
+        --shadow-code: 0 4px 16px rgba(0, 0, 0, 0.3);
+        --border-soft: rgba(255, 255, 255, 0.1);
+        --text-dark: #f2f2f5;
+        --text-sub: #9a9aa5;
+        --link-accent: #a494ff;
+        --nav-surface: rgba(20, 20, 24, 0.85);
+        --pill-active-bg: #f2f2f5;
+        --pill-active-fg: #18181b;
+        --pill-soft-bg: #2a2a33;
+        --tok-kw: #fb923c;
+        --tok-str: #4ade80;
+        --tok-com: #8b8b96;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg-light: #1c1c22;
+      --bg-docs: #0b0b0f;
+      --bg-card: #1c1c22;
+      --bg-code: #141419;
+      --bg-inline-code: rgba(255, 255, 255, 0.08);
+      --border-code: rgba(255, 255, 255, 0.12);
+      --shadow-code: 0 4px 16px rgba(0, 0, 0, 0.3);
+      --border-soft: rgba(255, 255, 255, 0.1);
+      --text-dark: #f2f2f5;
+      --text-sub: #9a9aa5;
+      --link-accent: #a494ff;
+      --nav-surface: rgba(20, 20, 24, 0.85);
+      --pill-active-bg: #f2f2f5;
+      --pill-active-fg: #18181b;
+      --pill-soft-bg: #2a2a33;
+      --tok-kw: #fb923c;
+      --tok-str: #4ade80;
+      --tok-com: #8b8b96;
+    }
+    :root[data-theme="light"] {
+      --bg-light: #ffffff;
+      --bg-docs: #f5f5fa;
+      --bg-card: #ffffff;
+      --bg-code: #ffffff;
+      --bg-inline-code: #e8eaee;
+      --border-code: rgba(0, 0, 0, 0.08);
+      --shadow-code: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --border-soft: rgba(0, 0, 0, 0.09);
+      --text-dark: #18181b;
+      --text-sub: #71717a;
+      --accent: #f2a9b8;
+      --link-accent: #6d5ff0;
+      --nav-surface: rgba(255, 255, 255, 0.85);
+      --pill-active-bg: #18181b;
+      --pill-active-fg: #ffffff;
+      --pill-soft-bg: #efefe6;
+      --tok-kw: #c2410c;
+      --tok-str: #15803d;
+      --tok-com: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-docs);
+      color: var(--text-dark);
+      min-height: 100vh;
+    }
+
+    /* ─── Top nav (fijo) ─────────────────────────────────────────────── */
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--nav-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-soft);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+    }
+
+    .topnav-inner {
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-dark);
+      text-decoration: none;
+    }
+
+    .topnav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .topnav-links a {
+      color: var(--text-sub);
+      text-decoration: none;
+    }
+
+    .topnav-links a:hover {
+      color: var(--text-dark);
+    }
+
+    .nav-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border-soft);
+    }
+
+    .nav-icon-btn {
+      background: none;
+      border: 1px solid var(--border-soft);
+      color: var(--text-sub);
+      border-radius: 20px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+
+    .nav-icon-btn:hover {
+      color: var(--text-dark);
+      border-color: var(--text-sub);
+    }
+
+    /* ─── Hero ───────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      /* Sin max-width: el fondo (bg-light) llena el viewport entero,
+         edge-to-edge — el ancho de lectura lo pone cada hijo, no la
+         sección. */
+      width: 100%;
+      /* El padding-top sigue estando por si el contenido es corto en un
+         viewport bajo: garantiza que no quede debajo del topnav fijo
+         aunque el centrado vertical lo empuje casi arriba del todo. */
+      padding: 6rem 1.5rem 3rem;
+      background: var(--bg-light);
+      overflow: hidden;
+    }
+
+    /* Halo suave detrás del wordmark — un radial-gradient grande y borroso,
+       no una imagen. */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(70vw, 900px);
+      height: min(70vw, 900px);
+      background: radial-gradient(circle, var(--border-soft) 0%, transparent 65%);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .hero h1 {
+      position: relative;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      /* Grande y centrado, con aire alrededor — no ocupa el ancho entero
+         de la sección, escala con el viewport dentro de un rango angosto. */
+      font-size: clamp(3rem, 7vw, 5.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .hero h1 .dot {
+      color: var(--text-sub);
+    }
+
+    .hero .tagline {
+      max-width: 640px;
+      margin: 1.5rem auto 2rem;
+      color: var(--text-sub);
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    .install-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      border: 1px solid var(--border-soft);
+      padding: 0.55rem 1.2rem;
+      border-radius: 100px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .install-chip:hover {
+      border-color: var(--text-sub);
+    }
+
+    .install-chip .chip-icon {
+      color: var(--text-sub);
+    }
+
+    .install-chip .chip-copy-icon {
+      color: var(--text-sub);
+      font-size: 0.9rem;
+    }
+
+    .hero-try {
+      position: relative;
+      width: 100%;
+      max-width: 1180px;
+      margin: 5rem auto 0;
+    }
+
+    .hero-try-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-sub);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    /* Carrusel — franja horizontal que se desplaza sola; el track duplica
+       la lista de emojis una vez así el loop no se nota (a mitad de
+       recorrido volvió a la posición 0, pixel por pixel). */
+    .hero-carousel {
+      overflow: hidden;
+      width: 100%;
+      /* Padding vertical, no solo horizontal: el overflow:hidden que
+         necesitamos para el scroll infinito también recortaba partículas
+         y accesorios que sobresalen arriba/abajo del emoji (zzz, corazones,
+         el globito de pensar) si no le dábamos aire de sobra. */
+      padding: 1.75rem 0;
+      mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    }
+
+    .hero-try-row {
+      display: flex;
+      align-items: center;
+      width: max-content;
+      gap: 1.75rem;
+      animation: hero-carousel-scroll 32s linear infinite;
+    }
+
+    .hero-carousel:hover .hero-try-row {
+      animation-play-state: paused;
+    }
+
+    @keyframes hero-carousel-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-try-row { animation: none; }
+    }
+
+    .hero-try-item {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      flex: none;
+    }
+
+    .copy-toast {
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--pill-active-bg);
+      color: var(--pill-active-fg);
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
+
+    /* ─── Nav de anclas (solo mobile, el sidebar se oculta) ─────────── */
+    .mobile-toc {
+      display: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem;
+      max-width: 640px;
+      margin: 0 auto 2rem;
+      padding: 0 1.5rem;
+    }
+
+    .mobile-toc a {
+      background: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      color: var(--text-dark);
+      text-decoration: none;
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    /* ─── Layout de docs: sidebar + contenido ───────────────────────── */
+    .docs-layout {
+      display: grid;
+      grid-template-columns: 200px minmax(0, 1fr);
+      gap: 3rem;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 5rem;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 80px;
+    }
+
+    .sidebar-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-sub);
+      font-weight: 700;
+      margin-bottom: 0.9rem;
+    }
+
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* Guion horizontal a la izquierda en vez de barra vertical — más
+       corto y tenue en reposo, más largo y de color en el activo. */
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .sidebar nav a::before {
+      content: '';
+      display: inline-block;
+      flex: none;
+      width: 14px;
+      height: 1px;
+      background: var(--text-sub);
+      opacity: 0.4;
+      transition: background-color 0.15s ease, opacity 0.15s ease, width 0.15s ease;
+    }
+
+    .sidebar nav a:hover {
+      color: var(--text-dark);
+    }
+
+    .sidebar nav a.active {
+      color: var(--link-accent);
+      font-weight: 700;
+    }
+
+    .sidebar nav a.active::before {
+      background: var(--link-accent);
+      opacity: 1;
+      width: 20px;
+    }
+
+    /* Sub-items (los 3 ejemplos de "Uso básico") — indentados, guion más
+       corto, sin negrita aunque estén activos. */
+    .sidebar nav a.sub {
+      padding-left: 1.05rem;
+      font-size: 0.8rem;
+    }
+
+    .sidebar nav a.sub::before {
+      width: 8px;
+    }
+
+    .sidebar nav a.sub.active {
+      font-weight: 500;
+    }
+
+    @media (max-width: 860px) {
+      .docs-layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .mobile-toc { display: flex; }
+    }
+
+    .content {
+      min-width: 0;
+    }
+
+    .doc-section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 80px;
+    }
+
+    .doc-section h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.75rem;
+    }
+
+    .doc-section > p {
+      color: var(--text-sub);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      font-size: 0.92rem;
+      max-width: 680px;
+    }
+
+    .doc-section table {
+      width: 100%;
+      max-width: 680px;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      margin-bottom: 1rem;
+    }
+
+    .doc-section th, .doc-section td {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border-bottom: 1px solid var(--border-soft);
+      vertical-align: top;
+    }
+
+    .doc-section th {
+      color: var(--text-sub);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    :not(pre) > code {
+      font-size: 0.82em;
+      background: var(--bg-inline-code);
+      border: 1px solid var(--border-code);
+      padding: 0.15em 0.42em;
+      border-radius: 6px;
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    .doc-section table td:first-child code {
+      color: var(--link-accent);
+      font-weight: 700;
+    }
+
+    .fw-picker {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .code-block {
+      position: relative;
+      background: var(--bg-code);
+      border: 1px solid var(--border-code);
+      border-radius: 12px;
+      box-shadow: var(--shadow-code);
+      margin-bottom: 1rem;
+      overflow: hidden;
+      max-width: 680px;
+    }
+
+    .code-block pre {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-size: 0.8rem;
+      color: var(--text-dark);
+      white-space: pre;
+    }
+
+    /* Highlighting naive por regex (ver highlightCode() en el script) —
+       ponytail: no es un lexer real, alcanza para snippets curados y
+       cortos como los de esta página; si algún día hay código generado
+       dinámicamente, ahí sí conviene una librería de verdad. */
+    .tok-kw { color: var(--tok-kw); }
+    .tok-str { color: var(--tok-str); }
+    .tok-com { color: var(--tok-com); font-style: italic; }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: var(--bg-docs);
+      border: 1px solid var(--border-soft);
+      color: var(--text-sub);
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      color: var(--text-dark);
+      background: var(--pill-soft-bg);
+      border-color: var(--text-sub);
+    }
+
+    /* ─── Tarjetas de ejemplo: tabs Preview / Code ──────────────────── */
+    .example-card {
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+      background: var(--bg-card);
+      max-width: 680px;
+      scroll-margin-top: 80px;
+    }
+
+    .example-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .example-card-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .example-tabs {
+      display: flex;
+      gap: 0.3rem;
+    }
+
+    .example-tab {
+      background: none;
+      border: none;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .example-tab.active {
+      background: var(--pill-soft-bg);
+      color: var(--text-dark);
+    }
+
+    .example-preview {
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      min-height: 140px;
+    }
+
+    .example-code {
+      padding: 1rem;
+    }
+
+    .example-code .code-block {
+      margin-bottom: 0;
+      max-width: none;
+      background: var(--bg-docs);
+      box-shadow: none;
+    }
+
+    .example-code .copy-btn {
+      background: var(--bg-card);
+    }
+
+    /* ─── Toolbar del catálogo interactivo (reusa .btn/.size-btn/etc.) ── */
+    .toolbar-wrapper {
+      position: sticky;
+      top: 70px;
+      z-index: 100;
+      margin-bottom: 2.5rem;
+    }
+
+    .toolbar {
+      background: var(--nav-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      padding: 0.6rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toolbar-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .btn, .size-btn, .state-chip, .example-tab {
+      font-family: inherit;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-dark);
+      border: 1px solid var(--border-soft);
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover {
+      border-color: var(--text-sub);
+    }
+
+    .btn.active {
+      background: var(--pill-active-bg);
+      border-color: var(--pill-active-bg);
+      color: var(--pill-active-fg);
+    }
+
+    .size-btn {
+      background: var(--bg-card);
+      color: var(--text-dark);
+      border: 1px solid var(--border-soft);
+      padding: 0.35rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .size-btn:hover {
+      border-color: var(--text-sub);
+    }
+
+    .size-btn.active {
+      background: var(--pill-active-bg);
+      border-color: var(--pill-active-bg);
+      color: var(--pill-active-fg);
+    }
+
+    /* Chips del banco de animaciones — mismo look que .size-btn, pero SIN
+       compartir la clase: el wiring global de "Tamaño" hace
+       querySelectorAll('.size-btn') y se engancharía a estos chips también,
+       pisando el toggle de cada uno con "quita active de todos los .size-btn". */
+    .state-chip {
+      background: var(--bg-card);
+      color: var(--text-dark);
+      border: 1px solid var(--border-soft);
+      padding: 0.35rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .state-chip:hover {
+      border-color: var(--text-sub);
+    }
+
+    .state-chip.active {
+      background: var(--pill-active-bg);
+      border-color: var(--pill-active-bg);
+      color: var(--pill-active-fg);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem 3rem;
+      max-width: 880px;
+      width: 100%;
+      justify-items: center;
+    }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 2.5rem 2rem; }
+    }
+
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    .emoji-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .emoji-item:hover {
+      transform: scale(1.06);
+    }
+
+    .emoji-slot {
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .emoji-label {
+      font-family: 'Caveat', cursive;
+      font-size: 1.6rem;
+      color: var(--text-dark);
+      font-weight: 700;
+      text-align: center;
+      line-height: 1;
+      cursor: copy;
+    }
+
+    .emoji-sublabel {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      text-transform: lowercase;
+      font-weight: 500;
+    }
+
+    /* ─── Casos de uso: los mismos emojis, en mockups de UI real ────── */
+    .usecase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .usecase-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      border: 1px solid var(--border-soft);
+      border-radius: 14px;
+      background: var(--bg-card);
+      padding: 1.1rem;
+    }
+
+    .usecase-card-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-sub);
+    }
+
+    .usecase-demo {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 96px;
+    }
+
+    .usecase-slot {
+      display: inline-flex;
+      flex: none;
+    }
+
+    /* Botón con ícono */
+    .uc-like-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      background: var(--bg-docs);
+      border: 1px solid var(--border-soft);
+      border-radius: 100px;
+      padding: 0.45rem 1.1rem 0.45rem 0.5rem;
+      cursor: pointer;
+    }
+
+    .uc-like-count {
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+
+    /* Logo / marca */
+    .uc-navbar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      background: var(--bg-docs);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      padding: 0.6rem 0.9rem;
+    }
+
+    .uc-navbar-brand {
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    .uc-navbar-links {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+    }
+
+    /* Estado vacío */
+    .uc-empty {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .uc-empty-text {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    /* Notificación / toast */
+    .uc-toast {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      width: 100%;
+      background: var(--bg-docs);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 0.7rem 1rem;
+    }
+
+    .uc-toast-text {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .uc-toast-text strong {
+      font-size: 0.82rem;
+    }
+
+    .uc-toast-text span {
+      color: var(--text-sub);
+    }
+
+    /* Chat / asistente */
+    .uc-chat {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.6rem;
+      width: 100%;
+    }
+
+    .uc-chat-bubble {
+      background: var(--pill-soft-bg);
+      color: var(--text-dark);
+      border-radius: 14px 14px 14px 4px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      max-width: 180px;
+    }
+
+    /* Estado de carga */
+    .uc-loading {
+      flex-direction: column;
+      gap: 0.7rem;
+      width: 100%;
+    }
+
+    .uc-loading-bar {
+      width: 100%;
+      max-width: 160px;
+      height: 6px;
+      border-radius: 100px;
+      background: var(--pill-soft-bg);
+      overflow: hidden;
+    }
+
+    .uc-loading-fill {
+      height: 100%;
+      width: 35%;
+      border-radius: 100px;
+      background: var(--link-accent);
+      animation: uc-loading-slide 1.4s ease-in-out infinite;
+    }
+
+    @keyframes uc-loading-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .uc-loading-fill { animation: none; width: 60%; }
+    }
+
+    /* Feedback de formulario */
+    .uc-form {
+      align-items: stretch;
+    }
+
+    .uc-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      width: 100%;
+    }
+
+    .uc-field-label {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    .uc-field-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .uc-input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 0.8rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-card);
+      color: var(--text-sub);
+    }
+
+    /* Mascota flotante en la esquina de un viewport de mentira */
+    .uc-viewport-frame {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      background: var(--bg-docs);
+      padding: 0.9rem;
+      overflow: hidden;
+    }
+
+    .uc-viewport-line {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--pill-soft-bg);
+      margin-bottom: 0.5rem;
+      width: 80%;
+    }
+
+    .uc-viewport-line.short {
+      width: 55%;
+    }
+
+    .uc-floating-slot {
+      position: absolute;
+      bottom: 0.7rem;
+      right: 0.7rem;
+    }
+
+    /* Avatar de usuario en un comentario */
+    .uc-comment {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      width: 100%;
+    }
+
+    .uc-comment-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 0;
+    }
+
+    .uc-comment-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .uc-comment-time {
+      color: var(--text-sub);
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+
+    .uc-comment-text {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-dark);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <a class="brand" href="#top">wissive.</a>
+      <div class="topnav-links">
+        <a href="https://github.com/EJCP3/wissive" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/wissive" target="_blank" rel="noopener">NPM</a>
+        <a href="#docs">Docs</a>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="nav-icon-btn" id="lang-toggle" type="button" aria-label="Switch language">EN</button>
+        <button class="nav-icon-btn" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+  </nav>
+
+  <header id="top">
+    <section class="hero">
+      <h1>wissive<span class="dot">.</span></h1>
+      <p class="tagline">
+        Emojis vivos, sin dependencias obligatorias. El core es TypeScript puro que no sabe
+        nada del DOM — física de resorte, selector de expresión, loop de render — y la capa
+        visual es un SVG que se dibuja por código, no un GIF ni un ícono estático.
+      </p>
+      <button class="install-chip" type="button" id="install-chip">
+        <span class="chip-icon">$</span> pnpm add wissive <span class="chip-copy-icon">⧉</span>
+      </button>
+
+      <div class="hero-try">
+        <div class="hero-try-label">Probalo — hacé click o pasá el mouse</div>
+        <div class="hero-carousel">
+          <div class="hero-try-row" id="hero-try-row"></div>
+        </div>
+      </div>
+    </section>
+  </header>
+
+  <nav class="mobile-toc" aria-label="Contenido de la página">
+    <a href="#introduccion">Introducción</a>
+    <a href="#instalacion">Instalación</a>
+    <a href="#catalogo">Catálogo</a>
+    <a href="#casos-de-uso">Casos de uso</a>
+    <a href="#personalizado">Personalizado</a>
+    <a href="#uso-basico">Uso básico</a>
+    <a href="#opciones">Opciones</a>
+    <a href="#estados">Estados</a>
+    <a href="#sonido">Sonido</a>
+    <a href="#accesibilidad">Accesibilidad</a>
+    <a href="#frameworks">Frameworks</a>
+    <a href="#roadmap">Roadmap</a>
+  </nav>
+
+  <main class="docs-layout" id="docs">
+    <aside class="sidebar">
+      <div class="sidebar-label">☰ En esta página</div>
+      <nav id="sidebar-nav">
+        <a href="#introduccion">Introducción</a>
+        <a href="#instalacion">Instalación</a>
+        <a href="#catalogo">Catálogo</a>
+        <a href="#casos-de-uso">Casos de uso</a>
+        <a href="#personalizado">Tu propio emoji</a>
+        <a href="#uso-basico">Uso básico</a>
+        <a href="#ej-basico" class="sub">Emoji básico</a>
+        <a href="#ej-programatico" class="sub">Control programático</a>
+        <a href="#ej-decorativo" class="sub">Solo decorativo</a>
+        <a href="#opciones">Opciones</a>
+        <a href="#estados">Estados de interacción</a>
+        <a href="#sonido">Sonido</a>
+        <a href="#accesibilidad">Accesibilidad</a>
+        <a href="#frameworks">Frameworks</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#creditos">Créditos</a>
+      </nav>
+    </aside>
+
+    <div class="content">
+
+      <section id="introduccion" class="doc-section">
+        <h2>Introducción</h2>
+        <p>
+          Wissive es una librería de JavaScript/TypeScript vanilla — sin framework, sin
+          dependencias de runtime obligatorias — que renderiza 14 personajes tipo <em>blob</em>
+          con diseño propio. Cada uno tiene 24 expresiones repartidas en 4 estados de
+          interacción, interpoladas con un resorte amortiguado en vez de <code>transition</code>
+          lineal de CSS, así que el movimiento entre expresiones se siente orgánico.
+        </p>
+        <p>
+          No es un set de íconos: es un motor de expresión con un catálogo ya diseñado, pensado
+          para tener, en dos líneas de código, un emoji que reacciona de verdad al mouse, al
+          teclado y al touch.
+        </p>
+      </section>
+
+      <section id="instalacion" class="doc-section">
+        <h2>Instalación</h2>
+        <p>Vía pnpm, para usar con un bundler:</p>
+        <div class="code-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code>pnpm add wissive</code></pre>
+        </div>
+        <div class="code-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code>import { createEmoji } from 'wissive';
+
+createEmoji('mochi', { target: document.querySelector('#slot') });</code></pre>
+        </div>
+        <p>O vía CDN, sin instalar nada:</p>
+        <div class="code-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/wissive/dist/wissive.umd.js"&gt;&lt;/script&gt;
+&lt;div id="slot"&gt;&lt;/div&gt;
+&lt;script&gt;
+  Wissive.createEmoji('mochi', { target: document.querySelector('#slot') });
+&lt;/script&gt;</code></pre>
+        </div>
+        <p style="font-size: 0.82rem;">
+          El paquete todavía no está publicado en npm — estos comandos funcionarán una vez
+          publicado (ver Roadmap).
+        </p>
+      </section>
+
+      <section id="catalogo" class="doc-section">
+        <h2>Catálogo — 14 personalidades</h2>
+        <p>
+          Cada emoji tiene 24 expresiones repartidas en 4 estados. Probá los controles, o
+          clickeá el nombre de cualquier emoji para copiar su <code>createEmoji()</code>.
+        </p>
+
+        <div class="toolbar-wrapper">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <span class="toolbar-label">Estado:</span>
+              <button class="btn active" data-state="idle">idle</button>
+              <button class="btn" data-state="near">near</button>
+              <button class="btn" data-state="hover">hover</button>
+              <button class="btn" data-state="click">click</button>
+            </div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label" id="state-count-label">Estados:</span>
+              <select id="state-select" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Acciones:</span>
+              <button class="btn active" id="btn-synergy">Sinergia Multi-Emoji</button>
+              <button class="btn active" id="btn-sound">Sonido</button>
+              <button class="btn active" id="btn-drag">Arrastrar</button>
+              <button class="btn active" id="btn-wander" title="Visita reacciones al azar en reposo, para sentirse vivo">Deambular</button>
+              <button class="btn" id="btn-gaze">Seguir Ratón</button>
+              <button class="btn" id="btn-spin">Girar 360°</button>
+              <button class="btn" id="btn-bounce">Rebotar</button>
+              <button class="btn" id="btn-flip">Espejo</button>
+              <button class="btn" id="btn-emphasis">Énfasis</button>
+            </div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Tema:</span>
+              <select id="theme-select" class="btn" style="padding: 0.3rem 0.6rem;">
+                <option value="auto" selected>Auto (Por Estado)</option>
+                <option value="neon">Neón Cyberpunk</option>
+                <option value="pastel">Pastel Suave</option>
+                <option value="dark">Dark Mode</option>
+                <option value="gold">Dorado Glam</option>
+              </select>
+            </div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Secuencia:</span>
+              <select id="sequence-select" class="btn" style="padding: 0.3rem 0.6rem;">
+                <option value="saludo">Saludo</option>
+                <option value="pensar">Pensar y responder</option>
+                <option value="celebrar">Celebrar</option>
+                <option value="dormirse">Dormirse</option>
+              </select>
+              <select id="sequence-mode" class="btn" style="padding: 0.3rem 0.6rem;">
+                <option value="once">una vez</option>
+                <option value="loop">bucle</option>
+                <option value="ping-pong">ping-pong</option>
+              </select>
+              <button class="btn" id="btn-sequence-play">Reproducir</button>
+              <button class="btn" id="btn-sequence-stop">Detener</button>
+            </div>
+
+            <div class="toolbar-group">
+              <span class="toolbar-label">Tamaño:</span>
+              <button class="size-btn" data-size="xs">XS</button>
+              <button class="size-btn" data-size="sm">SM</button>
+              <button class="size-btn active" data-size="base">Base</button>
+              <button class="size-btn" data-size="lg">LG</button>
+              <button class="size-btn" data-size="xl">XL</button>
+              <button class="size-btn" data-size="2xl">2XL</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" id="emoji-grid"></div>
+      </section>
+
+      <section id="casos-de-uso" class="doc-section">
+        <h2>Casos de uso</h2>
+        <p>
+          No es solo un catálogo para mirar: cada personaje está pensado para vivir dentro de
+          una interfaz real. Estos son mockups de UI armados con CSS — el emoji de cada uno es
+          una instancia real, montada con <code>createEmoji()</code>.
+        </p>
+
+        <div class="usecase-grid">
+          <div class="usecase-card">
+            <div class="usecase-card-label">Ícono de botón</div>
+            <div class="usecase-demo">
+              <button class="uc-like-btn" type="button">
+                <span class="usecase-slot" id="uc-slot-btn" style="width: 26px; height: 26px;"></span>
+                <span class="uc-like-btn-text">Me gusta <span class="uc-like-count">128</span></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Logo / marca</div>
+            <div class="usecase-demo">
+              <div class="uc-navbar">
+                <span class="usecase-slot" id="uc-slot-logo" style="width: 30px; height: 30px;"></span>
+                <span class="uc-navbar-brand">nimbly.</span>
+                <span class="uc-navbar-links">Inicio · Precios · Blog</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Estado vacío</div>
+            <div class="usecase-demo uc-empty">
+              <span class="usecase-slot" id="uc-slot-empty" style="width: 56px; height: 56px;"></span>
+              <p class="uc-empty-text">No hay resultados todavía</p>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Notificación</div>
+            <div class="usecase-demo">
+              <div class="uc-toast">
+                <span class="usecase-slot" id="uc-slot-toast" style="width: 30px; height: 30px;"></span>
+                <div class="uc-toast-text">
+                  <strong>Listo</strong>
+                  <span>Tus cambios se guardaron.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Asistente / chat</div>
+            <div class="usecase-demo">
+              <div class="uc-chat">
+                <span class="usecase-slot" id="uc-slot-chat" style="width: 44px; height: 44px;"></span>
+                <div class="uc-chat-bubble">¡Hola! ¿en qué te ayudo hoy?</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Estado de carga</div>
+            <div class="usecase-demo uc-loading">
+              <span class="usecase-slot" id="uc-slot-loading" style="width: 40px; height: 40px;"></span>
+              <div class="uc-loading-bar"><div class="uc-loading-fill"></div></div>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Feedback de formulario</div>
+            <div class="usecase-demo uc-form">
+              <label class="uc-field">
+                <span class="uc-field-label">Email</span>
+                <div class="uc-field-row">
+                  <input class="uc-input" type="text" value="hola@wissive.dev" disabled>
+                  <span class="usecase-slot" id="uc-slot-form" style="width: 26px; height: 26px;"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Mascota flotante</div>
+            <div class="usecase-demo">
+              <div class="uc-viewport-frame">
+                <div class="uc-viewport-line"></div>
+                <div class="uc-viewport-line short"></div>
+                <span class="usecase-slot uc-floating-slot" id="uc-slot-float" style="width: 36px; height: 36px;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="usecase-card">
+            <div class="usecase-card-label">Avatar de usuario</div>
+            <div class="usecase-demo">
+              <div class="uc-comment">
+                <span class="usecase-slot" id="uc-slot-avatar" style="width: 40px; height: 40px;"></span>
+                <div class="uc-comment-body">
+                  <div class="uc-comment-head">
+                    <strong>Caro</strong>
+                    <span class="uc-comment-time">hace 2h</span>
+                  </div>
+                  <p class="uc-comment-text">¡Se ve buenísimo, felicitaciones!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="personalizado" class="doc-section">
+        <h2>Tu propio emoji</h2>
+        <p>
+          Base círculo, rasgos a elección: ojos, boca, personalidad, partículas y sonido de
+          cualquiera de los 14, mezclados como quieras.
+        </p>
+
+        <div class="toolbar-wrapper" id="custom-panel-wrapper" style="position: static;">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <button class="btn" id="btn-randomize" type="button">🎲 Aleatorio</button>
+              <button class="btn" id="btn-custom-gaze" type="button">👀 Seguir Ratón</button>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Color:</span>
+              <input type="color" id="custom-color" value="#C9DCD3" style="width: 2.2rem; height: 2.2rem; border: none; border-radius: 10px; cursor: pointer;">
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Forma:</span>
+              <select id="custom-shape" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Ojos de:</span>
+              <select id="custom-eyes" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Boca de:</span>
+              <select id="custom-mouth" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Personalidad de:</span>
+              <select id="custom-motion" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Partículas de:</span>
+              <select id="custom-particles" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Sonido de:</span>
+              <select id="custom-sound" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+            </div>
+            <div class="toolbar-group">
+              <span class="toolbar-label">Tamaño:</span>
+              <div id="custom-size-picker">
+                <button type="button" class="state-chip" data-size="xs">XS</button>
+                <button type="button" class="state-chip" data-size="sm">SM</button>
+                <button type="button" class="state-chip active" data-size="base">Base</button>
+                <button type="button" class="state-chip" data-size="lg">LG</button>
+                <button type="button" class="state-chip" data-size="xl">XL</button>
+                <button type="button" class="state-chip" data-size="2xl">2XL</button>
+              </div>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top: 0.6rem; flex-direction: column; align-items: stretch; gap: 0.6rem;">
+            <span class="toolbar-label">Banco de animaciones — qué visita solo en reposo:</span>
+            <div id="custom-state-bank" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+          </div>
+        </div>
+
+        <div class="grid" id="custom-emoji-grid" style="max-width: 200px; margin: 1.5rem auto 0;"></div>
+
+        <p style="margin-top: 2rem;">Tu configuración, lista para copiar:</p>
+        <div class="fw-picker" id="custom-fw-picker">
+          <button class="btn active" data-fw="vanilla" type="button">Vanilla</button>
+          <button class="btn" data-fw="react" type="button">React</button>
+          <button class="btn" data-fw="vue" type="button">Vue</button>
+          <button class="btn" data-fw="astro" type="button">Astro</button>
+        </div>
+        <div class="code-block" id="custom-config-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code id="custom-config-code"></code></pre>
+        </div>
+      </section>
+
+      <section id="uso-basico" class="doc-section">
+        <h2>Uso básico</h2>
+        <p>Tres formas comunes de usar <code>createEmoji()</code>, con el código real de cada una.</p>
+
+        <div class="example-card" id="ej-basico">
+          <div class="example-card-head">
+            <span class="example-card-title">Emoji básico</span>
+            <div class="example-tabs">
+              <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+              <button class="example-tab" data-tab="code" type="button">Code</button>
+            </div>
+          </div>
+          <div class="example-preview">
+            <div id="example-basic-slot" style="width: 100px; height: 100px;"></div>
+          </div>
+          <div class="example-code" hidden>
+            <div class="code-block">
+              <button class="copy-btn" type="button">Copiar</button>
+              <pre><code>createEmoji('mochi', { target, size: 100 });</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="example-card" id="ej-programatico">
+          <div class="example-card-head">
+            <span class="example-card-title">Control programático</span>
+            <div class="example-tabs">
+              <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+              <button class="example-tab" data-tab="code" type="button">Code</button>
+            </div>
+          </div>
+          <div class="example-preview">
+            <div id="example-prog-slot" style="width: 100px; height: 100px;"></div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" id="ex-prog-happy">Feliz</button>
+              <button class="btn" id="ex-prog-sad">Triste</button>
+              <button class="btn" id="ex-prog-bounce">Rebotar</button>
+            </div>
+          </div>
+          <div class="example-code" hidden>
+            <div class="code-block">
+              <button class="copy-btn" type="button">Copiar</button>
+              <pre><code>const emoji = createEmoji('mochi', { target });
+
+emoji.setEmotion('happy');
+emoji.setEmotion('sad');
+emoji.bounce();</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="example-card" id="ej-decorativo">
+          <div class="example-card-head">
+            <span class="example-card-title">Solo decorativo (sin listeners)</span>
+            <div class="example-tabs">
+              <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+              <button class="example-tab" data-tab="code" type="button">Code</button>
+            </div>
+          </div>
+          <div class="example-preview">
+            <div id="example-decor-slot" style="width: 100px; height: 100px;"></div>
+          </div>
+          <div class="example-code" hidden>
+            <div class="code-block">
+              <button class="copy-btn" type="button">Copiar</button>
+              <pre><code>// No reacciona a hover/click/near; solo su animación de personalidad
+createEmoji('nima', { target, interactive: false });</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="opciones" class="doc-section">
+        <h2>Opciones</h2>
+        <p>Segundo parámetro de <code>createEmoji(name, options)</code>.</p>
+        <table>
+          <thead>
+            <tr><th>Opción</th><th>Tipo</th><th>Default</th><th>Qué hace</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>target</code></td><td>HTMLElement</td><td>—</td><td>Dónde se monta (requerido).</td></tr>
+            <tr><td><code>size</code></td><td>preset | number</td><td><code>'base'</code></td><td>Tamaño en px, o <code>xs/sm/base/lg/xl/2xl</code>.</td></tr>
+            <tr><td><code>interactive</code></td><td>boolean</td><td><code>true</code></td><td><code>false</code> = solo decorativo, sin listeners.</td></tr>
+            <tr><td><code>sound</code></td><td>boolean</td><td><code>true</code></td><td>Requiere Cuelume instalada.</td></tr>
+            <tr><td><code>draggable</code></td><td>boolean</td><td><code>true</code></td><td>Arrastrable, con física de resorte.</td></tr>
+            <tr><td><code>nearRadius</code></td><td>number</td><td><code>120</code></td><td>Radio en px para el estado <code>near</code>.</td></tr>
+            <tr><td><code>gazeTracking</code></td><td>boolean</td><td><code>false</code></td><td>Los ojos siguen el cursor.</td></tr>
+            <tr><td><code>ambientParticles</code></td><td>boolean</td><td><code>true</code></td><td>Partículas ocasionales en reposo.</td></tr>
+            <tr><td><code>autonomousStates</code></td><td>boolean</td><td><code>true</code></td><td>Visita reacciones al azar en reposo.</td></tr>
+            <tr><td><code>reducedMotion</code></td><td><code>'auto'</code> | boolean</td><td><code>'auto'</code></td><td>Sigue <code>prefers-reduced-motion</code>, o se fuerza.</td></tr>
+            <tr><td><code>theme</code></td><td><code>'auto'</code> | ThemeOption</td><td><code>'auto'</code></td><td>Color base personalizado.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="estados" class="doc-section">
+        <h2>Estados de interacción</h2>
+        <p>Cada estado dispara un pool de variantes; se sortea una evitando repetir la anterior.</p>
+        <table>
+          <thead>
+            <tr><th>Estado</th><th>Disparador</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>idle</code></td><td>Sin interacción</td><td>Reposo, respiración lenta.</td></tr>
+            <tr><td><code>near</code></td><td>Cursor se acerca (radio configurable)</td><td>El emoji "nota" que algo se acerca.</td></tr>
+            <tr><td><code>hover</code></td><td><code>mouseenter</code> / <code>mouseleave</code></td><td>Cursor directamente encima.</td></tr>
+            <tr><td><code>click</code></td><td><code>mousedown</code>/<code>up</code>, <code>touchstart</code>, Enter/Espacio</td><td>Interacción directa.</td></tr>
+          </tbody>
+        </table>
+        <div class="code-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code>emoji.setEmotion('hover'); // control programático, sin mouse
+emoji.destroy();           // limpieza: RAF + listeners + timers</code></pre>
+        </div>
+      </section>
+
+      <section id="sonido" class="doc-section">
+        <h2>Sonido (opcional)</h2>
+        <p>
+          Integración opcional con <a href="https://cuelume-site.pages.dev/" target="_blank" rel="noopener">Cuelume</a>
+          — <em>peer dependency</em>, nunca obligatoria. Se detecta en tiempo de ejecución
+          (import dinámico); si no está instalada, la librería funciona igual, en silencio,
+          sin errores en consola.
+        </p>
+        <div class="code-block">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code>createEmoji('mochi', { target, sound: true });  // por instancia
+emoji.setSound(false);                          // togglear en runtime</code></pre>
+        </div>
+      </section>
+
+      <section id="accesibilidad" class="doc-section">
+        <h2>Accesibilidad</h2>
+        <p>
+          <code>role="img"</code> + <code>aria-label</code> dinámico según la emoción y el estado
+          actual. Navegable por teclado (<code>tabindex</code>, Enter/Espacio equivalen a click).
+          Respeta <code>prefers-reduced-motion</code> del sistema operativo. Contraste trazo/relleno
+          verificado ≥3:1 (WCAG) en los 14 emojis.
+        </p>
+      </section>
+
+      <section id="frameworks" class="doc-section">
+        <h2>Integración con frameworks</h2>
+        <p>
+          Wrappers oficiales para React, Vue y Astro (<code>wissive/react</code>,
+          <code>wissive/vue</code>, <code>wissive/astro</code>) — en React/Vue empaquetan el
+          patrón <code>createEmoji()</code> + <code>destroy()</code> de siempre; en Astro no
+          resuelven timing (no hace falta), ahorran repetir el <code>&lt;script&gt;</code> si
+          usás el emoji en varias páginas. Elegí uno — el bloque de abajo lo recuerda.
+        </p>
+        <div class="fw-picker" id="fw-picker">
+          <button class="btn active" data-fw="vanilla" type="button">Vanilla</button>
+          <button class="btn" data-fw="react" type="button">React</button>
+          <button class="btn" data-fw="vue" type="button">Vue</button>
+          <button class="btn" data-fw="astro" type="button">Astro</button>
+        </div>
+        <div class="code-block" data-fw-slot="mount">
+          <button class="copy-btn" type="button">Copiar</button>
+          <pre><code></code></pre>
+        </div>
+        <p>Ejemplos completos en <a href="https://github.com/EJCP3/wissive/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a>.</p>
+      </section>
+
+      <section id="roadmap" class="doc-section">
+        <h2>Roadmap</h2>
+        <p>Lo que falta para el release v1.0 (detalle completo en <code>requerimientos.md</code>):</p>
+        <ul style="color: var(--text-sub); font-size: 0.9rem; line-height: 1.9; padding-left: 1.2rem;">
+          <li>Publicar en npm y probar el UMD vía CDN real.</li>
+          <li>Opción global (no solo por-instancia) para apagar todo el sonido.</li>
+          <li>Auditoría de accesibilidad con axe/Lighthouse en navegador real.</li>
+          <li>Test cruzado de navegadores + prueba de carga con 50 instancias simultáneas.</li>
+          <li>Decisión explícita sobre <code>near</code>/<code>hover</code> en dispositivos táctiles.</li>
+        </ul>
+      </section>
+
+      <section id="creditos" class="doc-section">
+        <h2>Créditos</h2>
+        <p>
+          MIT license. Sonido opcional vía <a href="https://cuelume-site.pages.dev/" target="_blank" rel="noopener">Cuelume</a>.
+        </p>
+      </section>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import {
+      createEmoji, createEmojiGroup, LIB, createCustomEmoji, loadCustomEmoji,
+      STATE_GROUPS, ALL_STATES,
+    } from '../src/index.ts';
+
+    // ─── Tema oscuro/claro ───────────────────────────────────────────────
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('wissive-theme', theme);
+      document.getElementById('theme-toggle').textContent = theme === 'dark' ? 'dias' : 'noche';
+    }
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(localStorage.getItem('wissive-theme') || (systemPrefersDark ? 'dark' : 'light'));
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    });
+
+    // ─── Idioma ES/EN ──────────────────────────────────────────────────
+    // Cada entrada traduce un selector estático via innerHTML; el original
+    // en español se cachea en dataset.es la primera vez que se toca, así
+    // que no hace falta reescribir todo el contenido en español acá.
+    let currentLang = localStorage.getItem('wissive-lang') || 'es';
+    const COPIED_TEXT = { es: '¡Copiado!', en: 'Copied!' };
+    const COPIED_CHECK_TEXT = { es: 'copiado ✓', en: 'copied ✓' };
+    const INSTALL_COPIED_TEXT = { es: '¡Copiado! ✓', en: 'Copied! ✓' };
+    const CARD_TOOLTIP_TEXT = {
+      es: 'Click en el nombre para copiar el snippet',
+      en: "Click the name to copy the snippet",
+    };
+    const RANDOM_TOOLTIP_TEXT = { es: 'Click para copiar el snippet', en: 'Click to copy the snippet' };
+    const NEUTRAL_CIRCLE_TEXT = { es: '(círculo neutro)', en: '(neutral circle)' };
+    const STATES_LABEL_TEXT = { es: 'Estados:', en: 'States:' };
+    const MOBILE_TOC_ARIA = { es: 'Contenido de la página', en: 'Page contents' };
+    const TITLE_TEXT = { es: 'Wissive — Emojis vivos', en: 'Wissive — Living emojis' };
+
+    const I18N_EN = [
+      ['.hero .tagline', `Living emojis, no required dependencies. The core is pure TypeScript that knows nothing about the DOM — spring physics, expression selection, render loop — and the visual layer is an SVG drawn in code, not a GIF or a static icon.`],
+      ['.hero-try-label', 'Try it — click or hover'],
+      ['.copy-btn', 'Copy'],
+
+      ['.mobile-toc a[href="#introduccion"]', 'Introduction'],
+      ['.mobile-toc a[href="#instalacion"]', 'Installation'],
+      ['.mobile-toc a[href="#catalogo"]', 'Catalog'],
+      ['.mobile-toc a[href="#casos-de-uso"]', 'Use cases'],
+      ['.mobile-toc a[href="#personalizado"]', 'Customize'],
+      ['.mobile-toc a[href="#uso-basico"]', 'Basic usage'],
+      ['.mobile-toc a[href="#opciones"]', 'Options'],
+      ['.mobile-toc a[href="#estados"]', 'States'],
+      ['.mobile-toc a[href="#sonido"]', 'Sound'],
+      ['.mobile-toc a[href="#accesibilidad"]', 'Accessibility'],
+      ['.mobile-toc a[href="#frameworks"]', 'Frameworks'],
+      ['.mobile-toc a[href="#roadmap"]', 'Roadmap'],
+
+      ['.sidebar-label', '☰ On this page'],
+      ['#sidebar-nav a[href="#introduccion"]', 'Introduction'],
+      ['#sidebar-nav a[href="#instalacion"]', 'Installation'],
+      ['#sidebar-nav a[href="#catalogo"]', 'Catalog'],
+      ['#sidebar-nav a[href="#casos-de-uso"]', 'Use cases'],
+      ['#sidebar-nav a[href="#personalizado"]', 'Your own emoji'],
+      ['#sidebar-nav a[href="#uso-basico"]', 'Basic usage'],
+      ['#sidebar-nav a[href="#ej-basico"]', 'Basic emoji'],
+      ['#sidebar-nav a[href="#ej-programatico"]', 'Programmatic control'],
+      ['#sidebar-nav a[href="#ej-decorativo"]', 'Decorative only'],
+      ['#sidebar-nav a[href="#opciones"]', 'Options'],
+      ['#sidebar-nav a[href="#estados"]', 'Interaction states'],
+      ['#sidebar-nav a[href="#sonido"]', 'Sound'],
+      ['#sidebar-nav a[href="#accesibilidad"]', 'Accessibility'],
+      ['#sidebar-nav a[href="#frameworks"]', 'Frameworks'],
+      ['#sidebar-nav a[href="#roadmap"]', 'Roadmap'],
+      ['#sidebar-nav a[href="#creditos"]', 'Credits'],
+
+      ['#introduccion h2', 'Introduction'],
+      ['#introduccion p:nth-of-type(1)', `Wissive is a vanilla JavaScript/TypeScript library — no framework, no required runtime dependencies — that renders 14 <em>blob</em>-style characters with their own design. Each one has 24 expressions spread across 4 interaction states, interpolated with a damped spring instead of a linear CSS <code>transition</code>, so movement between expressions feels organic.`],
+      ['#introduccion p:nth-of-type(2)', `It's not an icon set: it's an expression engine with an already-designed catalog, built so that in two lines of code you get an emoji that really reacts to the mouse, the keyboard, and touch.`],
+
+      ['#instalacion h2', 'Installation'],
+      ['#instalacion p:nth-of-type(1)', 'Via pnpm, to use with a bundler:'],
+      ['#instalacion p:nth-of-type(2)', 'Or via CDN, nothing to install:'],
+      ['#instalacion p:nth-of-type(3)', 'The package isn’t published on npm yet — these commands will work once it is (see Roadmap).'],
+
+      ['#catalogo h2', 'Catalog — 14 personalities'],
+      ['#catalogo > p', `Each emoji has 24 expressions spread across 4 states. Try the controls, or click any emoji's name to copy its <code>createEmoji()</code>.`],
+      ['#catalogo .toolbar-label:nth-of-type(1)', 'State:'],
+      ['#btn-synergy', 'Multi-Emoji Synergy'],
+      ['#btn-sound', 'Sound'],
+      ['#btn-drag', 'Drag'],
+      ['#btn-wander', 'Wander'],
+      ['#btn-gaze', 'Follow Cursor'],
+      ['#btn-spin', 'Spin 360°'],
+      ['#btn-bounce', 'Bounce'],
+      ['#btn-flip', 'Mirror'],
+      ['#btn-emphasis', 'Emphasis'],
+      ['#theme-select option[value="auto"]', 'Auto (By State)'],
+      ['#theme-select option[value="neon"]', 'Neon Cyberpunk'],
+      ['#theme-select option[value="pastel"]', 'Soft Pastel'],
+      ['#theme-select option[value="gold"]', 'Golden Glam'],
+      ['#sequence-select option[value="saludo"]', 'Greeting'],
+      ['#sequence-select option[value="pensar"]', 'Think and reply'],
+      ['#sequence-select option[value="celebrar"]', 'Celebrate'],
+      ['#sequence-select option[value="dormirse"]', 'Fall asleep'],
+      ['#sequence-mode option[value="once"]', 'once'],
+      ['#sequence-mode option[value="loop"]', 'loop'],
+      ['#sequence-mode option[value="ping-pong"]', 'ping-pong'],
+      ['#btn-sequence-play', 'Play'],
+      ['#btn-sequence-stop', 'Stop'],
+
+      ['#casos-de-uso h2', 'Use cases'],
+      ['#casos-de-uso > p', `Not just a catalog to look at — every character is meant to live inside a real interface. These are UI mockups built with CSS; the emoji in each one is a real instance, mounted with <code>createEmoji()</code>.`],
+      ['.usecase-card:nth-of-type(1) .usecase-card-label', 'Button icon'],
+      ['.usecase-card:nth-of-type(2) .usecase-card-label', 'Logo / brand'],
+      ['.usecase-card:nth-of-type(3) .usecase-card-label', 'Empty state'],
+      ['.usecase-card:nth-of-type(4) .usecase-card-label', 'Notification'],
+      ['.usecase-card:nth-of-type(5) .usecase-card-label', 'Assistant / chat'],
+      ['.usecase-card:nth-of-type(6) .usecase-card-label', 'Loading state'],
+      ['.usecase-card:nth-of-type(7) .usecase-card-label', 'Form feedback'],
+      ['.usecase-card:nth-of-type(8) .usecase-card-label', 'Floating mascot'],
+      ['.usecase-card:nth-of-type(9) .usecase-card-label', 'User avatar'],
+      ['.uc-like-btn-text', 'Like <span class="uc-like-count">128</span>'],
+      ['.uc-navbar-links', 'Home · Pricing · Blog'],
+      ['.uc-empty-text', "There's nothing here yet"],
+      ['.uc-toast-text strong', 'Done'],
+      ['.uc-toast-text span', 'Your changes were saved.'],
+      ['.uc-chat-bubble', 'Hi! What can I help with today?'],
+      ['.uc-field-label', 'Email'],
+      ['.uc-comment-time', '2h ago'],
+      ['.uc-comment-text', 'Looks amazing, congrats!'],
+
+      ['#personalizado h2', 'Your own emoji'],
+      ['#personalizado > p', 'Circle base, pick the traits: eyes, mouth, personality, particles, and sound from any of the 14, mixed however you like.'],
+      ['#btn-randomize', ' Randomize'],
+      ['#btn-custom-gaze', ' Follow Cursor'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(1)', 'Color:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(2)', 'Shape:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(3)', 'Eyes from:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(4)', 'Mouth from:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(5)', 'Personality from:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(6)', 'Particles from:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(7)', 'Sound from:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(8)', 'Size:'],
+      ['#custom-panel-wrapper .toolbar-label:nth-of-type(9)', 'Animation bank — what it wanders into while idle:'],
+      ['#personalizado p[style*="margin-top: 2rem"]', 'Your configuration, ready to copy:'],
+
+      ['#uso-basico h2', 'Basic usage'],
+      ['#uso-basico > p', `Three common ways to use <code>createEmoji()</code>, with the real code for each.`],
+      ['.example-card:nth-of-type(1) .example-card-title', 'Basic emoji'],
+      ['.example-card:nth-of-type(2) .example-card-title', 'Programmatic control'],
+      ['.example-card:nth-of-type(3) .example-card-title', 'Decorative only (no listeners)'],
+      ['#ex-prog-happy', 'Happy'],
+      ['#ex-prog-sad', 'Sad'],
+      ['#ex-prog-bounce', 'Bounce'],
+
+      ['#opciones h2', 'Options'],
+      ['#opciones > p', `Second parameter of <code>createEmoji(name, options)</code>.`],
+      ['#opciones th:nth-child(1)', 'Option'],
+      ['#opciones th:nth-child(2)', 'Type'],
+      ['#opciones th:nth-child(3)', 'Default'],
+      ['#opciones th:nth-child(4)', 'What it does'],
+      ['#opciones tr:nth-child(1) td:nth-child(4)', 'Where it mounts (required).'],
+      ['#opciones tr:nth-child(2) td:nth-child(4)', `Size in px, or <code>xs/sm/base/lg/xl/2xl</code>.`],
+      ['#opciones tr:nth-child(3) td:nth-child(4)', `<code>false</code> = decorative only, no listeners.`],
+      ['#opciones tr:nth-child(4) td:nth-child(4)', 'Requires Cuelume installed.'],
+      ['#opciones tr:nth-child(5) td:nth-child(4)', 'Draggable, with spring physics.'],
+      ['#opciones tr:nth-child(6) td:nth-child(4)', `Radius in px for the <code>near</code> state.`],
+      ['#opciones tr:nth-child(7) td:nth-child(4)', 'The eyes follow the cursor.'],
+      ['#opciones tr:nth-child(8) td:nth-child(4)', 'Occasional particles while idle.'],
+      ['#opciones tr:nth-child(9) td:nth-child(4)', 'Wanders into random reactions while idle.'],
+      ['#opciones tr:nth-child(10) td:nth-child(4)', `Follows <code>prefers-reduced-motion</code>, or forced.`],
+      ['#opciones tr:nth-child(11) td:nth-child(4)', 'Custom base color.'],
+
+      ['#estados h2', 'Interaction states'],
+      ['#estados > p', 'Each state fires a pool of variants; one is drawn at random, avoiding the previous one.'],
+      ['#estados th:nth-child(1)', 'State'],
+      ['#estados th:nth-child(2)', 'Trigger'],
+      ['#estados th:nth-child(3)', 'Description'],
+      ['#estados tr:nth-child(1) td:nth-child(2)', 'No interaction'],
+      ['#estados tr:nth-child(1) td:nth-child(3)', 'Idle, slow breathing.'],
+      ['#estados tr:nth-child(2) td:nth-child(2)', 'Cursor gets close (configurable radius)'],
+      ['#estados tr:nth-child(2) td:nth-child(3)', 'The emoji "notices" something approaching.'],
+      ['#estados tr:nth-child(3) td:nth-child(3)', 'Cursor directly on top.'],
+      ['#estados tr:nth-child(4) td:nth-child(2)', `<code>mousedown</code>/<code>up</code>, <code>touchstart</code>, Enter/Space`],
+      ['#estados tr:nth-child(4) td:nth-child(3)', 'Direct interaction.'],
+
+      ['#sonido h2', 'Sound (optional)'],
+      ['#sonido > p', `Optional integration with <a href="https://cuelume-site.pages.dev/" target="_blank" rel="noopener">Cuelume</a> — <em>peer dependency</em>, never required. Detected at runtime (dynamic import); if it isn't installed, the library still works, silently, with no console errors.`],
+
+      ['#accesibilidad h2', 'Accessibility'],
+      ['#accesibilidad > p', `<code>role="img"</code> + dynamic <code>aria-label</code> based on the current emotion and state. Keyboard navigable (<code>tabindex</code>, Enter/Space act as click). Respects the operating system's <code>prefers-reduced-motion</code>. Stroke/fill contrast verified ≥3:1 (WCAG) across all 14 emojis.`],
+
+      ['#frameworks h2', 'Framework integration'],
+      ['#frameworks > p', `Official wrappers for React, Vue, and Astro (<code>wissive/react</code>, <code>wissive/vue</code>, <code>wissive/astro</code>) — for React/Vue they package the usual <code>createEmoji()</code> + <code>destroy()</code> pattern; for Astro there's no timing problem to solve (none needed), they just save repeating the <code>&lt;script&gt;</code> if you use the emoji on several pages. Pick one — the block below remembers it.`],
+      ['#frameworks p:last-of-type', `Full examples in <a href="https://github.com/EJCP3/wissive/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a>.`],
+
+      ['#roadmap h2', 'Roadmap'],
+      ['#roadmap > p', `What's left for the v1.0 release (full detail in <code>requerimientos.md</code>):`],
+      ['#roadmap li:nth-child(1)', 'Publish on npm and test the UMD build via a real CDN.'],
+      ['#roadmap li:nth-child(2)', 'Global option (not just per-instance) to turn off all sound.'],
+      ['#roadmap li:nth-child(3)', 'Accessibility audit with axe/Lighthouse on a real browser.'],
+      ['#roadmap li:nth-child(4)', 'Cross-browser testing + load test with 50 simultaneous instances.'],
+      ['#roadmap li:nth-child(5)', `Explicit decision on <code>near</code>/<code>hover</code> for touch devices.`],
+
+      ['#creditos h2', 'Credits'],
+      ['#creditos > p', `MIT license. Optional sound via <a href="https://cuelume-site.pages.dev/" target="_blank" rel="noopener">Cuelume</a>`],
+    ];
+
+    function applyLang(lang) {
+      I18N_EN.forEach(([selector, en]) => {
+        document.querySelectorAll(selector).forEach(el => {
+          if (el.dataset.es === undefined) el.dataset.es = el.innerHTML;
+          el.innerHTML = lang === 'en' ? en : el.dataset.es;
+        });
+      });
+      document.querySelectorAll('.custom-select-neutral-option').forEach(opt => {
+        opt.textContent = NEUTRAL_CIRCLE_TEXT[lang];
+      });
+      document.querySelectorAll('.emoji-item[title]').forEach(item => {
+        item.title = CARD_TOOLTIP_TEXT[lang];
+      });
+      const countLabel = document.getElementById('state-count-label');
+      if (countLabel) countLabel.textContent = `${ALL_STATES.length} ${STATES_LABEL_TEXT[lang]}`;
+      const mobileToc = document.querySelector('.mobile-toc');
+      if (mobileToc) mobileToc.setAttribute('aria-label', MOBILE_TOC_ARIA[lang]);
+      document.documentElement.lang = lang;
+      document.title = TITLE_TEXT[lang];
+      document.getElementById('lang-toggle').textContent = lang === 'en' ? 'ES' : 'EN';
+      localStorage.setItem('wissive-lang', lang);
+      currentLang = lang;
+    }
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      applyLang(currentLang === 'en' ? 'es' : 'en');
+    });
+
+    // ─── Chip de instalación ───────────────────────────────────────────
+    document.getElementById('install-chip').addEventListener('click', function () {
+      navigator.clipboard.writeText('pnpm add wissive');
+      const original = this.innerHTML;
+      this.textContent = INSTALL_COPIED_TEXT[currentLang];
+      setTimeout(() => { this.innerHTML = original; }, 1200);
+    });
+
+    // ─── Botones "Copiar" de todos los bloques de código ───────────────
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.nextElementSibling.textContent;
+        navigator.clipboard.writeText(code);
+        const original = btn.textContent;
+        btn.textContent = COPIED_TEXT[currentLang];
+        setTimeout(() => { btn.textContent = original; }, 1200);
+      });
+    });
+
+    // Toast flotante de "copiado" — para elementos sin un label de texto
+    // donde reemplazar el contenido (el carrusel del hero es solo la cara,
+    // no hay dónde escribir "copiado" al lado como en el catálogo).
+    function showCopyToast(target) {
+      const toast = document.createElement('div');
+      toast.className = 'copy-toast';
+      toast.textContent = COPIED_TEXT[currentLang];
+      target.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => toast.remove(), 1200);
+    }
+
+    // ─── Syntax highlighting de los bloques de código ──────────────────
+    // ponytail: regex de una sola pasada, no un lexer real — alcanza para
+    // los snippets curados y cortos de esta página. Tiene que ser una sola
+    // pasada con grupos alternados (comentario | string | keyword): hacer
+    // pasadas separadas encadenadas hace que cada regex vuelva a escanear
+    // el HTML que insertó la anterior (ej: la pasada de keywords matcheaba
+    // "class" dentro del class="tok-str" que la pasada de strings acababa
+    // de insertar). Si algún día hay código generado dinámicamente más
+    // largo, ahí sí conviene una librería de highlighting de verdad.
+    const TOKEN = /(\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(import|from|export|default|const|let|var|new|function|return|class|extends|if|else|true|false|null|undefined|async|await|typeof)\b/g;
+    function highlightCode(el) {
+      const raw = el.textContent;
+      const escaped = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      el.innerHTML = escaped.replace(TOKEN, (m, com, str, kw) => {
+        if (com) return `<span class="tok-com">${com}</span>`;
+        if (str) return `<span class="tok-str">${str}</span>`;
+        if (kw) return `<span class="tok-kw">${kw}</span>`;
+        return m;
+      });
+    }
+    document.querySelectorAll('.code-block code').forEach(highlightCode);
+
+    // ─── Selector de framework: "elegí uno, todo el código lo recuerda" ─
+    const FW_SNIPPETS = {
+      vanilla: `import { createEmoji } from 'wissive';
+
+const instance = createEmoji('mochi', { target });
+// ...
+instance.destroy();`,
+      react: `import { Wissive } from 'wissive/react';
+
+<Wissive name="mochi" size="lg" sound />`,
+      vue: `<script setup>
+import { Wissive } from 'wissive/vue';
+<\/script>
+
+<template>
+  <Wissive name="mochi" :options="{ size: 'lg', sound: true }" />
+</template>`,
+      astro: `---
+import Wissive from 'wissive/astro';
+---
+<Wissive name="mochi" size="lg" sound />`,
+    };
+
+    function setFramework(fw) {
+      localStorage.setItem('wissive-fw', fw);
+      document.querySelectorAll('#fw-picker .btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.fw === fw);
+      });
+      document.querySelectorAll('[data-fw-slot="mount"] code').forEach(code => {
+        code.textContent = FW_SNIPPETS[fw] || FW_SNIPPETS.vanilla;
+        highlightCode(code);
+      });
+    }
+    document.querySelectorAll('#fw-picker .btn').forEach(btn => {
+      btn.addEventListener('click', () => setFramework(btn.dataset.fw));
+    });
+    setFramework(localStorage.getItem('wissive-fw') || 'vanilla');
+
+    // ─── Tabs Preview / Code de las tarjetas de "Uso básico" ───────────
+    // ponytail: toggle de visibilidad entre dos paneles ya renderizados,
+    // no un editor de código en vivo como wissfort — si se necesita
+    // ejecutar el snippet editado, ahí sí hace falta un sandbox real.
+    document.querySelectorAll('.example-tabs').forEach(tabs => {
+      const card = tabs.closest('.example-card');
+      const preview = card.querySelector('.example-preview');
+      const code = card.querySelector('.example-code');
+      tabs.querySelectorAll('.example-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.querySelectorAll('.example-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const showCode = tab.dataset.tab === 'code';
+          preview.hidden = showCode;
+          code.hidden = !showCode;
+        });
+      });
+    });
+
+    // ─── Sidebar: resalta la sección visible ────────────────────────────
+    {
+      const links = document.querySelectorAll('#sidebar-nav a');
+      const linkByHref = new Map([...links].map(a => [a.getAttribute('href'), a]));
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const link = linkByHref.get('#' + entry.target.id);
+          if (!link) return;
+          link.classList.toggle('active', entry.isIntersecting);
+        });
+      }, { rootMargin: '-80px 0px -70% 0px' });
+      document.querySelectorAll('.doc-section, .example-card[id]').forEach(sec => observer.observe(sec));
+    }
+
+    // El desplegable se genera desde el registro de estados: antes estaba escrito
+    // a mano y se había desincronizado (idle duplicado, etiquetas en francés, "39").
+    {
+      const select = document.getElementById('state-select');
+      select.innerHTML = STATE_GROUPS.map(g =>
+        `<optgroup label="${g.label} (${g.states.length})">` +
+        g.states.map(s => `<option value="${s}"${s === 'idle' ? ' selected' : ''}>${s}</option>`).join('') +
+        '</optgroup>'
+      ).join('');
+      document.getElementById('state-count-label').textContent = `${ALL_STATES.length} ${STATES_LABEL_TEXT[currentLang]}`;
+    }
+
+    // Lista ordenada según la imagen de referencia
+    const ORDERED_EMOJIS = [
+      'mochi',   // happy
+      'zumi',    // flutter
+      'suri',    // pleasure
+      'nima',    // peaceful
+      'cota',    // normal
+      'dozy',    // tired
+      'lumo',    // sad
+      'fidge',   // anxiety
+      'brix',    // anger
+      'wilt',    // disappointed
+      'knot',    // stress
+      'snug',    // sleepy
+      'pip',     // surprised
+      'void',    // numbness
+    ];
+
+    const grid = document.getElementById('emoji-grid');
+    const stateSelect = document.getElementById('state-select');
+    const stateBtns = document.querySelectorAll('.btn[data-state]');
+    const instances = {};
+
+    ORDERED_EMOJIS.forEach(name => {
+      const def = LIB[name];
+      if (!def) return;
+
+      const item = document.createElement('div');
+      item.className = 'emoji-item';
+      item.title = CARD_TOOLTIP_TEXT[currentLang];
+
+      item.innerHTML = `
+        <div class="emoji-slot" id="slot-${name}"></div>
+        <div class="emoji-label">${def.name.charAt(0).toUpperCase() + def.name.slice(1)}</div>
+        <div class="emoji-sublabel">${def.emotion}</div>
+      `;
+
+      grid.appendChild(item);
+
+      const slot = item.querySelector(`#slot-${name}`);
+      instances[name] = createEmoji(name, { target: slot, size: 120 });
+
+      // Snippet copiable — clic en la etiqueta (no en el emoji, que ya
+      // tiene su propia interacción) copia el createEmoji() de esa cara.
+      const sub = item.querySelector('.emoji-sublabel');
+      item.querySelector('.emoji-label').addEventListener('click', () => {
+        navigator.clipboard.writeText(
+          `createEmoji('${name}', { target, size: 120 })`
+        );
+        const original = sub.textContent;
+        sub.textContent = COPIED_CHECK_TEXT[currentLang];
+        setTimeout(() => { sub.textContent = original; }, 1200);
+      });
+    });
+
+    // ─── Emoji Personalizado (base círculo, rasgos a elección) ─────────
+    const customItem = document.createElement('div');
+    customItem.className = 'emoji-item';
+    customItem.innerHTML = `
+      <div class="emoji-slot" id="slot-custom"></div>
+      <div class="emoji-label">Mi Emoji</div>
+      <div class="emoji-sublabel">personalizado</div>
+    `;
+    document.getElementById('custom-emoji-grid').appendChild(customItem);
+    const customSlot = customItem.querySelector('#slot-custom');
+
+    const colorInput = document.getElementById('custom-color');
+    const shapeSelect = document.getElementById('custom-shape');
+    const eyesSelect = document.getElementById('custom-eyes');
+    const mouthSelect = document.getElementById('custom-mouth');
+    const motionSelect = document.getElementById('custom-motion');
+    const particlesSelect = document.getElementById('custom-particles');
+    const soundSelect = document.getElementById('custom-sound');
+
+    [eyesSelect, mouthSelect, motionSelect, particlesSelect].forEach(select => {
+      select.innerHTML = `<option value="" class="custom-select-neutral-option">${NEUTRAL_CIRCLE_TEXT[currentLang]}</option>` +
+        Object.keys(LIB).filter(n => n !== 'custom').map(n =>
+          `<option value="${n}">${n.charAt(0).toUpperCase() + n.slice(1)}</option>`
+        ).join('');
+    });
+
+    // El <select> de sonido sigue funcionando igual por debajo (el value
+    // sigue siendo el nombre del personaje — soundFrom lo busca en LIB y
+    // toma su `emotion`), pero mostrar "Mochi"/"Zumi" ahí confundía: lo que
+    // cambia al elegir es el sonido, no la cara. La etiqueta ahora muestra
+    // los cues reales de Cuelume (hover · click), copiados a mano del
+    // switch(emotion) en src/core/sound.ts — si ese mapeo cambia, esto
+    // se desincroniza y hay que actualizarlo acá también.
+    const SOUND_CUE_LABELS = {
+      mochi: 'Chime · Sparkle',
+      zumi: 'Bloom · Pulse',
+      suri: 'Droplet · Bloom',
+      nima: 'Whisper · Arrival',
+      cota: 'Tick · Toggle',
+      dozy: 'Whisper · Loading',
+      snug: 'Whisper · Loading',
+      lumo: 'Droplet · Scan',
+      wilt: 'Droplet · Scan',
+      fidge: 'Tick · Pulse',
+      knot: 'Tick · Pulse',
+      brix: 'Release · Press',
+      pip: 'Chime · Success',
+      void: 'Page · Ready',
+    };
+    soundSelect.innerHTML = `<option value="" class="custom-select-neutral-option">${NEUTRAL_CIRCLE_TEXT[currentLang]}</option>` +
+      Object.keys(LIB).filter(n => n !== 'custom').map(n =>
+        `<option value="${n}">${SOUND_CUE_LABELS[n] || n}</option>`
+      ).join('');
+
+    // Tipos nuevos que ningún personaje del catálogo usa todavía — no hay
+    // un "de X" del que copiarlos, así que van con su propio valor
+    // "eye:N"/"mouth:N" que applyCustomFromControls() detecta abajo.
+    eyesSelect.innerHTML +=
+      '<option value="eye:21">Star</option>' +
+      '<option value="eye:22">Side-eye</option>' +
+      '<option value="eye:23">Wink</option>' +
+      '<option value="eye:24">Anime sparkle</option>' +
+      '<option value="eye:25">Sleepy</option>' +
+      '<option value="eye:26">Googly</option>' +
+      '<option value="eye:27">Waterfall</option>' +
+      '<option value="eye:28">Blank stare</option>' +
+      '<option value="eye:29">Worried</option>' +
+      '<option value="eye:30">Angry zigzag</option>' +
+      '<option value="eye:31">Content ring</option>';
+    mouthSelect.innerHTML +=
+      '<option value="mouth:15">Tongue out</option>' +
+      '<option value="mouth:16">Smirk</option>' +
+      '<option value="mouth:17">Triangle</option>' +
+      '<option value="mouth:18">Cat &gt;3&lt;</option>' +
+      '<option value="mouth:19">Square surprise</option>' +
+      '<option value="mouth:20">Pursed</option>' +
+      '<option value="mouth:21">Teeth row</option>' +
+      '<option value="mouth:22">Side tongue</option>' +
+      '<option value="mouth:23">Big tongue</option>' +
+      '<option value="mouth:24">Sassy smile</option>';
+
+    // Las 22 siluetas que getSilhouettePath() soporta (render/svg.ts) — las
+    // 14 de los personajes del catálogo, más 8 que ningún personaje usa
+    // todavía. 'circle' es el default de siempre, no una opción "neutra"
+    // aparte: acá siempre hay que elegir alguna forma.
+    const SHAPES = [
+      ['circle', 'Circle'], ['heart', 'Heart'], ['round-blob', 'Round blob'],
+      ['capsule', 'Capsule'], ['rounded-squircle', 'Squircle'], ['pear-blob', 'Pear'],
+      ['egg-oval', 'Egg'], ['starburst-puff', 'Starburst'], ['pill-vertical', 'Pill'],
+      ['ghost-blob', 'Ghost'], ['oval', 'Oval'], ['elongated-oval', 'Elongated oval'],
+      ['teardrop-blob', 'Teardrop'], ['flame-blob', 'Flame'], ['droopy-blob', 'Droopy'],
+      ['bear-blob', 'Bear (ears)'], ['spiky-blob', 'Spiky'], ['cloud-blob', 'Cloud'],
+      ['wide-oval', 'Wide oval'], ['soft-round', 'Soft round'], ['octopus-blob', 'Octopus'],
+      ['wave-blob', 'Wave'],
+    ];
+    shapeSelect.innerHTML = SHAPES.map(([value, label]) =>
+      `<option value="${value}"${value === 'circle' ? ' selected' : ''}>${label}</option>`
+    ).join('');
+
+    // Chips del banco de animaciones — vacío = usa el genérico (las 16 Reacciones);
+    // marcar alguno restringe el deambular de este emoji a solo esos. Sin
+    // etiquetas de grupo a propósito: es una sola bolsa de opciones para
+    // elegir a ojo, no una taxonomía que el usuario necesite entender.
+    const stateBankContainer = document.getElementById('custom-state-bank');
+    stateBankContainer.innerHTML = STATE_GROUPS
+      .filter(g => g.label !== 'Interacción') // idle/near/hover/click no se "visitan"
+      .flatMap(g => g.states)
+      .map(s => `<button type="button" class="state-chip" data-state="${s}">${s}</button>`)
+      .join('');
+    function getSelectedStateBank() {
+      return [...stateBankContainer.querySelectorAll('.active')].map(b => b.dataset.state);
+    }
+
+    // Tamaño propio de este emoji — separado del "Tamaño" del catálogo de
+    // arriba (ese ya toca todas las instancias, este toca solo la tuya).
+    let customSize = 'base';
+    // "Seguir Ratón" propio del panel — separado de currentGaze del catálogo
+    // de arriba, mismo motivo que customSize: cada uno toca solo su instancia.
+    let customGaze = false;
+    function renderCustomEmoji(options) {
+      if (instances.custom) instances.custom.destroy();
+      createCustomEmoji('custom', options);
+      instances.custom = createEmoji('custom', { target: customSlot, size: customSize, gazeTracking: customGaze });
+    }
+
+    // Snippet copiable con la config actual — se regenera en cada cambio,
+    // mismo patrón reactivo que el resto de este panel. El framework
+    // elegido en #custom-fw-picker envuelve la misma llamada a
+    // createCustomEmoji() distinto según el caso — ver setFramework() más
+    // abajo, mismo patrón que el picker de la sección Frameworks.
+    const customConfigCode = document.getElementById('custom-config-code');
+
+    function buildCustomConfigCall(name, options) {
+      const opts = Object.entries(options)
+        .filter(([, v]) => v !== undefined && !(Array.isArray(v) && v.length === 0))
+        .map(([k, v]) => `  ${k}: ${JSON.stringify(v)},`)
+        .join('\n');
+      return `createCustomEmoji('${name}', {\n${opts}\n});`;
+    }
+
+    function buildCustomSnippet(fw, options) {
+      const configCall = buildCustomConfigCall('mi-emoji', options);
+      if (fw === 'react') {
+        return `import { createCustomEmoji } from 'wissive';
+import { Wissive } from 'wissive/react';
+
+${configCall}
+
+<Wissive name="mi-emoji" />`;
+      }
+      if (fw === 'vue') {
+        return `<script setup>
+import { createCustomEmoji } from 'wissive';
+import { Wissive } from 'wissive/vue';
+
+${configCall}
+<\/script>
+
+<template>
+  <Wissive name="mi-emoji" />
+</template>`;
+      }
+      if (fw === 'astro') {
+        // Sin el wrapper <Wissive> de wissive/astro a propósito: ese
+        // pre-renderiza en el server leyendo LIB[name], pero un emoji
+        // personalizado recién se registra en LIB en el cliente
+        // (createCustomEmoji usa localStorage, que no existe en el
+        // frontmatter). Va con el patrón manual, como
+        // examples/astro/wissive-demo.astro.
+        return `<div id="mi-emoji-slot"></div>
+
+<script>
+  import { createCustomEmoji, createEmoji } from 'wissive';
+  ${configCall.replace(/\n/g, '\n  ')}
+  createEmoji('mi-emoji', { target: document.getElementById('mi-emoji-slot') });
+<\/script>`;
+      }
+      return `import { createCustomEmoji, createEmoji } from 'wissive';
+
+${configCall}
+
+const emoji = createEmoji('mi-emoji', { target });`;
+    }
+
+    let customFw = localStorage.getItem('wissive-custom-fw') || 'vanilla';
+    let lastCustomOptions = {};
+
+    function renderCustomConfigSnippet(options) {
+      lastCustomOptions = options;
+      customConfigCode.textContent = buildCustomSnippet(customFw, options);
+      highlightCode(customConfigCode);
+    }
+
+    document.querySelectorAll('#custom-fw-picker .btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.fw === customFw);
+      btn.addEventListener('click', () => {
+        customFw = btn.dataset.fw;
+        localStorage.setItem('wissive-custom-fw', customFw);
+        document.querySelectorAll('#custom-fw-picker .btn').forEach((b) => b.classList.toggle('active', b === btn));
+        renderCustomConfigSnippet(lastCustomOptions);
+      });
+    });
+
+    // Restaurar personalización guardada (localStorage) o usar círculo neutro por defecto
+    const savedCustom = loadCustomEmoji('custom');
+    if (savedCustom) {
+      colorInput.value = savedCustom.baseColor;
+      // La silueta sí se guarda tal cual en la EmojiDefinition (a diferencia
+      // de eyesFrom/mouthFrom, que se hornean en números y no hay forma de
+      // reconstruir el nombre original) — a esta sí la podemos restaurar.
+      shapeSelect.value = savedCustom.silhouette || 'circle';
+      LIB.custom = savedCustom; // usar la definición guardada tal cual, sin reconstruirla
+      instances.custom = createEmoji('custom', { target: customSlot, size: customSize });
+      (savedCustom.autonomousStatePool || []).forEach(s => {
+        const btn = stateBankContainer.querySelector(`[data-state="${s}"]`);
+        if (btn) btn.classList.add('active');
+      });
+      // Los selects "de X" no se restauran (la definición guardada ya viene
+      // horneada, no como referencias) — el snippet solo refleja color,
+      // forma y banco de estados hasta que el usuario toque algo.
+      renderCustomConfigSnippet({ baseColor: savedCustom.baseColor, silhouette: savedCustom.silhouette, stateBank: savedCustom.autonomousStatePool || [] });
+    } else {
+      renderCustomEmoji({});
+      renderCustomConfigSnippet({ baseColor: colorInput.value });
+    }
+
+    // Reactivo: cada cambio se refleja de inmediato, sin botón "Aplicar"
+    // El select mezcla dos cosas: "de X" (nombre de un personaje del
+    // catálogo) y los tipos nuevos sin personaje asignado ("eye:21") — este
+    // helper separa cuál de las dos es antes de armar las options.
+    function resolveTraitSelect(value, sentinel) {
+      if (value.startsWith(sentinel + ':')) {
+        return { override: Number(value.slice(sentinel.length + 1)) };
+      }
+      return { from: value || undefined };
+    }
+
+    function applyCustomFromControls() {
+      const eyes = resolveTraitSelect(eyesSelect.value, 'eye');
+      const mouth = resolveTraitSelect(mouthSelect.value, 'mouth');
+      const options = {
+        baseColor: colorInput.value,
+        silhouette: shapeSelect.value || undefined,
+        eyesFrom: eyes.from,
+        eyeTypeOverride: eyes.override,
+        mouthFrom: mouth.from,
+        mouthTypeOverride: mouth.override,
+        motionFrom: motionSelect.value || undefined,
+        particlesFrom: particlesSelect.value || undefined,
+        soundFrom: soundSelect.value || undefined,
+        stateBank: getSelectedStateBank(),
+      };
+      renderCustomEmoji(options);
+      renderCustomConfigSnippet(options);
+      instances.custom.triggerParticles(10); // vista previa inmediata del tema de partículas
+    }
+    colorInput.addEventListener('input', applyCustomFromControls);
+    shapeSelect.addEventListener('change', applyCustomFromControls);
+    eyesSelect.addEventListener('change', applyCustomFromControls);
+    mouthSelect.addEventListener('change', applyCustomFromControls);
+    motionSelect.addEventListener('change', applyCustomFromControls);
+    particlesSelect.addEventListener('change', applyCustomFromControls);
+    soundSelect.addEventListener('change', applyCustomFromControls);
+    stateBankContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-state]');
+      if (!btn) return;
+      btn.classList.toggle('active');
+      applyCustomFromControls();
+    });
+
+    document.getElementById('custom-size-picker').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-size]');
+      if (!btn) return;
+      btn.parentElement.querySelectorAll('.state-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      customSize = btn.dataset.size;
+      instances.custom.setSize(customSize);
+    });
+
+    // Sortea de las options que el <select> ya tiene en el DOM, no de una
+    // lista aparte — así incluye los eye:N/mouth:N nuevos sin tener que
+    // mantenerlos sincronizados en dos lugares (ya se desincronizó una vez
+    // cuando el botón no los conocía). Reusado por el botón "Aleatorio" y
+    // por los aleatorios del carrusel del hero, mismo sorteo en los dos.
+    const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const pickFromSelect = (select) => pickRandom([...select.options].map((o) => o.value));
+    const pickRandomColor = () => pickRandom(Object.keys(LIB).filter((n) => n !== 'custom').map((n) => LIB[n].baseColor));
+
+    function randomCustomOptions() {
+      const eyes = resolveTraitSelect(pickFromSelect(eyesSelect), 'eye');
+      const mouth = resolveTraitSelect(pickFromSelect(mouthSelect), 'mouth');
+      return {
+        baseColor: pickRandomColor(),
+        silhouette: pickFromSelect(shapeSelect),
+        eyesFrom: eyes.from,
+        eyeTypeOverride: eyes.override,
+        mouthFrom: mouth.from,
+        mouthTypeOverride: mouth.override,
+        motionFrom: pickFromSelect(motionSelect) || undefined,
+        particlesFrom: pickFromSelect(particlesSelect) || undefined,
+        soundFrom: pickFromSelect(soundSelect) || undefined,
+      };
+    }
+
+    document.getElementById('btn-randomize').addEventListener('click', () => {
+      const options = randomCustomOptions();
+      colorInput.value = options.baseColor;
+      shapeSelect.value = options.silhouette;
+      eyesSelect.value = options.eyeTypeOverride !== undefined ? `eye:${options.eyeTypeOverride}` : (options.eyesFrom || '');
+      mouthSelect.value = options.mouthTypeOverride !== undefined ? `mouth:${options.mouthTypeOverride}` : (options.mouthFrom || '');
+      motionSelect.value = options.motionFrom || '';
+      particlesSelect.value = options.particlesFrom || '';
+      soundSelect.value = options.soundFrom || '';
+      applyCustomFromControls();
+    });
+
+    document.getElementById('btn-custom-gaze').addEventListener('click', (e) => {
+      customGaze = !customGaze;
+      e.target.classList.toggle('active', customGaze);
+      if (instances.custom && instances.custom.setGazeTracking) instances.custom.setGazeTracking(customGaze);
+    });
+
+    // Inicializar Motor de Sinergias Multi-Emoji
+    const emojiGroup = createEmojiGroup(Object.values(instances), {
+      proximityThreshold: 220,
+      enableGazeSync: true,
+      enableSynergies: true,
+    });
+
+    function setGlobalState(activeState) {
+      stateBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.state === activeState);
+      });
+      stateSelect.value = activeState;
+      Object.values(instances).forEach(inst => inst.setEmotion(activeState));
+    }
+
+    stateBtns.forEach(btn => {
+      btn.addEventListener('click', () => setGlobalState(btn.dataset.state));
+    });
+
+    stateSelect.addEventListener('change', (e) => {
+      setGlobalState(e.target.value);
+    });
+
+    let currentFlip = false;
+    let currentEmphasis = false;
+    let currentGaze = false;
+    let currentSound = true;
+    let currentDrag = true;
+    let currentWander = true;
+    let currentSynergy = true;
+
+    document.getElementById('btn-synergy').addEventListener('click', (e) => {
+      currentSynergy = !currentSynergy;
+      e.target.classList.toggle('active', currentSynergy);
+      if (currentSynergy) {
+        emojiGroup.start();
+      } else {
+        emojiGroup.stop();
+        Object.values(instances).forEach(inst => inst.setGaze({ x: 0, y: 0 }));
+      }
+    });
+
+    document.getElementById('btn-sound').addEventListener('click', (e) => {
+      currentSound = !currentSound;
+      e.target.classList.toggle('active', currentSound);
+      Object.values(instances).forEach(inst => inst.setSound(currentSound));
+    });
+
+    document.getElementById('btn-drag').addEventListener('click', (e) => {
+      currentDrag = !currentDrag;
+      e.target.classList.toggle('active', currentDrag);
+      Object.values(instances).forEach(inst => inst.setDraggable(currentDrag));
+    });
+
+    document.getElementById('btn-wander').addEventListener('click', (e) => {
+      currentWander = !currentWander;
+      e.target.classList.toggle('active', currentWander);
+      Object.values(instances).forEach(inst => inst.setAutonomousStates(currentWander));
+    });
+
+    document.getElementById('btn-gaze').addEventListener('click', (e) => {
+      currentGaze = !currentGaze;
+      e.target.classList.toggle('active', currentGaze);
+      Object.values(instances).forEach(inst => inst.setGazeTracking(currentGaze));
+    });
+
+    document.getElementById('btn-spin').addEventListener('click', () => {
+      Object.values(instances).forEach(inst => inst.spin(1));
+    });
+
+    document.getElementById('btn-bounce').addEventListener('click', () => {
+      Object.values(instances).forEach(inst => inst.bounce());
+    });
+
+    document.getElementById('btn-flip').addEventListener('click', (e) => {
+      currentFlip = !currentFlip;
+      e.target.classList.toggle('active', currentFlip);
+      Object.values(instances).forEach(inst => inst.setFlipX(currentFlip));
+    });
+
+    document.getElementById('btn-emphasis').addEventListener('click', (e) => {
+      currentEmphasis = !currentEmphasis;
+      e.target.classList.toggle('active', currentEmphasis);
+      Object.values(instances).forEach(inst => inst.setEmphasis(currentEmphasis));
+    });
+
+    const THEMES = {
+      auto: 'auto',
+      neon: { baseColor: '#00E5FF' },
+      pastel: { baseColor: '#F8BBD0' },
+      dark: { baseColor: '#37474F' },
+      gold: { baseColor: '#FFD54F' },
+    };
+
+    document.getElementById('theme-select').addEventListener('change', (e) => {
+      const selectedTheme = THEMES[e.target.value] || 'auto';
+      Object.values(instances).forEach(inst => {
+        if (inst.setTheme) inst.setTheme(selectedTheme);
+      });
+    });
+
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const presetSize = btn.getAttribute('data-size');
+        Object.values(instances).forEach(inst => {
+          if (inst.setSize) inst.setSize(presetSize);
+        });
+      });
+    });
+
+    // ─── Secuencias de expresiones encadenadas ────────────────────────
+    // Cada paso reutiliza el pool de expresiones de un estado; el motor de
+    // resortes interpola entre pasos, así que solo hace falta el orden y el ritmo.
+    const SEQUENCES = {
+      saludo: [
+        { state: 'curious', duration: 450 },
+        { state: 'happy', duration: 700 },
+        { state: 'excited', duration: 600 },
+        { state: 'idle', duration: 800 },
+      ],
+      pensar: [
+        { state: 'thinking', duration: 1100 },
+        { state: 'searching', duration: 900 },
+        { state: 'confused', duration: 700 },
+        { state: 'proud', duration: 900 },
+        { state: 'idle', duration: 800 },
+      ],
+      celebrar: [
+        { state: 'surprised', duration: 350 },
+        { state: 'excited', duration: 550 },
+        { state: 'laughing', duration: 700 },
+        { state: 'celebrate', duration: 800 },
+      ],
+      dormirse: [
+        { state: 'bored', duration: 900 },
+        { state: 'drowsy', duration: 1100 },
+        { state: 'sleeping', duration: 1600 },
+      ],
+    };
+
+    document.getElementById('btn-sequence-play').addEventListener('click', () => {
+      const steps = SEQUENCES[document.getElementById('sequence-select').value];
+      const mode = document.getElementById('sequence-mode').value;
+      Object.values(instances).forEach(inst => inst.playSequence(steps, { mode }));
+    });
+
+    document.getElementById('btn-sequence-stop').addEventListener('click', () => {
+      Object.values(instances).forEach(inst => inst.stopSequence());
+    });
+
+    // ─── Hero: carrusel con los 14 + unos aleatorios, en vivo ───────────
+    // Los aleatorios se generan UNA vez (mismo nombre, misma config) y se
+    // intercalan en la lista antes de duplicarla — si se generara uno
+    // nuevo por mitad, el "salto" del loop mostraría una cara distinta a
+    // la que se estaba mirando.
+    const HERO_RANDOM_COUNT = 4;
+    const heroRandomNames = [];
+    // createCustomEmoji() devuelve la EmojiDefinition ya "horneada"
+    // (expresiones concretas), no las options originales (eyesFrom, etc.)
+    // — hay que guardarlas aparte para poder reconstruir el snippet copiable.
+    const heroRandomOptions = new Map();
+    for (let i = 0; i < HERO_RANDOM_COUNT; i++) {
+      const name = `hero-random-${i}`;
+      const options = randomCustomOptions();
+      createCustomEmoji(name, options);
+      heroRandomOptions.set(name, options);
+      heroRandomNames.push(name);
+    }
+
+    const heroFaces = [...ORDERED_EMOJIS];
+    heroRandomNames.forEach((name, i) => {
+      const pos = Math.floor((i + 1) * (heroFaces.length / (heroRandomNames.length + 1)));
+      heroFaces.splice(pos, 0, name);
+    });
+
+    // Duplicado una vez: el track anima de 0 a -50%, así el "salto" del
+    // loop cae justo cuando la segunda mitad (idéntica a la primera) ya
+    // ocupó el lugar de la primera — no se nota el corte.
+    const heroRow = document.getElementById('hero-try-row');
+    [...heroFaces, ...heroFaces].forEach(name => {
+      const slot = document.createElement('div');
+      slot.className = 'hero-try-item';
+      heroRow.appendChild(slot);
+      createEmoji(name, { target: slot, size: 68, draggable: false });
+
+      if (heroRandomOptions.has(name)) {
+        slot.title = RANDOM_TOOLTIP_TEXT[currentLang];
+        slot.addEventListener('click', () => {
+          const snippet = `${buildCustomConfigCall(name, heroRandomOptions.get(name))}\n\nconst emoji = createEmoji('${name}', { target });`;
+          navigator.clipboard.writeText(snippet);
+          showCopyToast(slot);
+        });
+      }
+    });
+
+    // ─── Ejemplos de "Uso básico": instancias en vivo ──────────────────
+    createEmoji('mochi', { target: document.getElementById('example-basic-slot'), size: 100 });
+
+    const progEmoji = createEmoji('mochi', { target: document.getElementById('example-prog-slot'), size: 100 });
+    document.getElementById('ex-prog-happy').addEventListener('click', () => progEmoji.setEmotion('happy'));
+    document.getElementById('ex-prog-sad').addEventListener('click', () => progEmoji.setEmotion('sad'));
+    document.getElementById('ex-prog-bounce').addEventListener('click', () => progEmoji.bounce());
+
+    createEmoji('nima', { target: document.getElementById('example-decor-slot'), size: 100, interactive: false });
+
+    // ─── Casos de uso: mismas instancias, sin toolbar global ───────────
+    // No entran en `instances` a propósito: son una vitrina aparte, no
+    // deberían moverse cuando alguien toca el "Tamaño"/"Estado" del
+    // catálogo de arriba. `draggable: false` en todas — son de mentira,
+    // arrastrarlas se saldría de su mockup en miniatura.
+    createEmoji('mochi', { target: document.getElementById('uc-slot-btn'), size: 26, draggable: false });
+    createEmoji('zumi', { target: document.getElementById('uc-slot-logo'), size: 30, draggable: false });
+    createEmoji('void', { target: document.getElementById('uc-slot-empty'), size: 56, draggable: false, interactive: false, ambientParticles: false });
+    createEmoji('suri', { target: document.getElementById('uc-slot-toast'), size: 30, draggable: false, interactive: false });
+    createEmoji('cota', { target: document.getElementById('uc-slot-chat'), size: 44, draggable: false });
+    createEmoji('dozy', { target: document.getElementById('uc-slot-loading'), size: 40, draggable: false, interactive: false });
+    createEmoji('nima', { target: document.getElementById('uc-slot-form'), size: 26, draggable: false, interactive: false });
+    createEmoji('pip', { target: document.getElementById('uc-slot-float'), size: 36, draggable: false });
+    createEmoji('snug', { target: document.getElementById('uc-slot-avatar'), size: 40, draggable: false });
+
+    // Recién acá existe todo (grid, selects, tabla de opciones dinámica no
+    // hay, pero sí los items del catálogo) — es el único punto seguro para
+    // aplicar el idioma guardado sin pisar contenido que todavía no se creó.
+    applyLang(currentLang);
+  </script>
+</body>
+</html>

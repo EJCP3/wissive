@@ -1,0 +1,17 @@
+---
+// Ejemplo de integración con Astro — Fase 7 de requerimientos.md
+// Uso directo, sin wrapper: Astro no necesita uno, basta un <script> de
+// cliente que monta en DOMContentLoaded y destruye si la página se
+// reemplaza vía View Transitions (astro:before-swap) — sin eso, navegar
+// entre páginas con transiciones deja el RAF y los listeners colgando.
+---
+<div id="wissive-slot"></div>
+
+<script>
+  import { createEmoji } from 'wissive';
+
+  const target = document.getElementById('wissive-slot')!;
+  const instance = createEmoji('mochi', { target, size: 'lg', sound: true });
+
+  document.addEventListener('astro:before-swap', () => instance.destroy(), { once: true });
+</script>

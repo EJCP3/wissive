@@ -1,0 +1,25 @@
+---
+---
+
+<section id="opciones" class="doc-section">
+  <h2>Opciones</h2>
+  <p>Segundo parámetro de <code>createEmoji(name, options)</code>.</p>
+  <table>
+    <thead>
+      <tr><th>Opción</th><th>Tipo</th><th>Default</th><th>Qué hace</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>target</code></td><td>HTMLElement</td><td>—</td><td>Dónde se monta (requerido).</td></tr>
+      <tr><td><code>size</code></td><td>preset | number</td><td><code>'base'</code></td><td>Tamaño en px, o <code>xs/sm/base/lg/xl/2xl</code>.</td></tr>
+      <tr><td><code>interactive</code></td><td>boolean</td><td><code>true</code></td><td><code>false</code> = solo decorativo, sin listeners.</td></tr>
+      <tr><td><code>sound</code></td><td>boolean</td><td><code>true</code></td><td>Requiere Cuelume instalada.</td></tr>
+      <tr><td><code>draggable</code></td><td>boolean</td><td><code>true</code></td><td>Arrastrable, con física de resorte.</td></tr>
+      <tr><td><code>nearRadius</code></td><td>number</td><td><code>120</code></td><td>Radio en px para el estado <code>near</code>.</td></tr>
+      <tr><td><code>gazeTracking</code></td><td>boolean</td><td><code>false</code></td><td>Los ojos siguen el cursor.</td></tr>
+      <tr><td><code>ambientParticles</code></td><td>boolean</td><td><code>true</code></td><td>Partículas ocasionales en reposo.</td></tr>
+      <tr><td><code>autonomousStates</code></td><td>boolean</td><td><code>true</code></td><td>Visita reacciones al azar en reposo.</td></tr>
+      <tr><td><code>reducedMotion</code></td><td><code>'auto'</code> | boolean</td><td><code>'auto'</code></td><td>Sigue <code>prefers-reduced-motion</code>, o se fuerza.</td></tr>
+      <tr><td><code>theme</code></td><td><code>'auto'</code> | ThemeOption</td><td><code>'auto'</code></td><td>Color base personalizado.</td></tr>
+    </tbody>
+  </table>
+</section>

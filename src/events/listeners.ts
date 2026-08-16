@@ -51,10 +51,56 @@ export function attachEventListeners(
     callbacks.onClickEnd();
   };
 
+  // Keyboard & Focus accessibility
+  let isFocused = false;
+  let isKeyDown = false;
+
+  const handleFocus = () => {
+    isFocused = true;
+    callbacks.onHoverStart();
+  };
+
+  const handleBlur = () => {
+    isFocused = false;
+    if (isKeyDown) {
+      isKeyDown = false;
+      isClicked = false;
+      callbacks.onClickEnd();
+    }
+    callbacks.onHoverEnd();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault(); // Evitar scroll de la página con la tecla Espacio
+      if (!isKeyDown) {
+        isKeyDown = true;
+        isClicked = true;
+        callbacks.onClickStart();
+      }
+    }
+  };
+
+  const handleKeyUp = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (isKeyDown) {
+        isKeyDown = false;
+        isClicked = false;
+        callbacks.onClickEnd();
+      }
+    }
+  };
+
   element.addEventListener('mouseenter', handleMouseEnter);
   element.addEventListener('mouseleave', handleMouseLeave);
   element.addEventListener('mousedown', handleMouseDown);
   window.addEventListener('mouseup', handleMouseUp);
+
+  element.addEventListener('focus', handleFocus);
+  element.addEventListener('blur', handleBlur);
+  element.addEventListener('keydown', handleKeyDown);
+  element.addEventListener('keyup', handleKeyUp);
 
   element.addEventListener('touchstart', handleTouchStart, { passive: false });
   window.addEventListener('touchend', handleTouchEnd);
@@ -72,7 +118,7 @@ export function attachEventListeners(
       callbacks.onGazeMove(22 * normX, 14 * normY);
     }
 
-    if (isHovered || isClicked) return;
+    if (isHovered || isClicked || isFocused) return;
 
     const nowNear = distance <= nearRadius;
     if (nowNear !== isNear) {
@@ -88,8 +134,13 @@ export function attachEventListeners(
     element.removeEventListener('mouseleave', handleMouseLeave);
     element.removeEventListener('mousedown', handleMouseDown);
     window.removeEventListener('mouseup', handleMouseUp);
+    element.removeEventListener('focus', handleFocus);
+    element.removeEventListener('blur', handleBlur);
+    element.removeEventListener('keydown', handleKeyDown);
+    element.removeEventListener('keyup', handleKeyUp);
     element.removeEventListener('touchstart', handleTouchStart);
     window.removeEventListener('touchend', handleTouchEnd);
     window.removeEventListener('mousemove', handleGlobalMouseMove);
   };
 }
+

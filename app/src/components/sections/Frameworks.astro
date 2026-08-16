@@ -1,0 +1,26 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="frameworks" class="doc-section">
+  <h2>Integración con frameworks</h2>
+  <p>
+    Wrappers oficiales para React, Vue y Astro (<code>wissive/react</code>, <code>wissive/vue</code>, <code>wissive/astro</code>)
+    — para React/Vue encapsulan el patrón <code>createEmoji()</code> + <code>destroy()</code> de siempre; en Astro no hay
+    problema de timing que resolver (no hace falta), solo ahorran repetir el <code>&lt;script&gt;</code> si usás el emoji
+    en varias páginas. Elegí uno — el bloque de abajo lo recuerda.
+  </p>
+
+  <div class="fw-picker" id="fw-picker">
+    <button class="btn active" data-fw="vanilla" type="button">Vanilla</button>
+    <button class="btn" data-fw="react" type="button">React</button>
+    <button class="btn" data-fw="vue" type="button">Vue</button>
+    <button class="btn" data-fw="astro" type="button">Astro</button>
+  </div>
+
+  <CodeBlock dataFwSlot="mount" />
+
+  <p>
+    Ejemplos completos en <a href="https://github.com/EJCP3/wissive/tree/master/examples" target="_blank" rel="noopener"><code>examples/</code></a>.
+  </p>
+</section>

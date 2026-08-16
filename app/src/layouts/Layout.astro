@@ -1,0 +1,40 @@
+---
+import '../styles/variables.css';
+import '../styles/main.css';
+import Topnav from '../components/Topnav.astro';
+import Hero from '../components/Hero.astro';
+import MobileToc from '../components/MobileToc.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Wissive — Emojis vivos',
+  description = 'Micro-librería de JavaScript/TypeScript de emojis vivos reactivos con física de resorte',
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <Topnav />
+  <Hero />
+  <MobileToc />
+
+  <slot />
+
+  <script src="../scripts/app.ts"></script>
+</body>
+</html>

@@ -4,6 +4,32 @@
 
 ---
 
+## Instalación rápida
+
+### Vía npm
+```bash
+npm install wissive
+```
+```js
+import { createEmoji } from 'wissive';
+
+createEmoji('mochi', { target: document.querySelector('#slot') });
+```
+
+### Vía CDN (sin instalar nada)
+```html
+<script src="https://cdn.jsdelivr.net/npm/wissive/dist/wissive.umd.js"></script>
+<div id="slot"></div>
+<script>
+  Wissive.createEmoji('mochi', { target: document.querySelector('#slot') });
+</script>
+```
+
+> El paquete todavía no está publicado en npm (ver `requerimientos.md`, Fase 6) — estos son los
+> comandos que funcionarán una vez publicado.
+
+---
+
 ## 1. ¿Qué es Wissive?
 
 Wissive es una librería de JavaScript vanilla (sin dependencias obligatorias, sin framework)
@@ -34,8 +60,10 @@ código, un emoji que "está vivo" en su interfaz.
 ## 3. Funcionalidad principal
 
 ### 3.1 Catálogo de emojis
-14 personajes base con diseño propio (ver `design.md`), cada uno con 24 expresiones
-distribuidas en 4 estados de interacción.
+14 personajes base con diseño propio (ver `desing.md`), cada uno con 24 expresiones
+distribuidas en 4 estados de interacción. Catálogo visual y demo en vivo de los 14, con
+snippet copiable por emoji (clic en el nombre): correr `pnpm run app` y abrir
+[`app/index.html`](app/index.html).
 
 ### 3.2 Estados de interacción
 | Estado | Disparador | Descripción |
@@ -111,10 +139,42 @@ emoji.destroy();            // limpieza (RAF + listeners)
 - **CJS** — compatibilidad con proyectos Node/legacy.
 
 ### 4.5 Integración con frameworks
-Wissive no depende de ningún framework, pero se puede envolver en cualquiera mediante
-lifecycle hooks (`useEffect`/`onMounted`/script de Astro) que llaman a `createEmoji()` en el
-montaje y a `.destroy()` en el desmontaje. Wrappers oficiales (`wissive/react`, `wissive/vue`)
-se evalúan como paquetes satélite en una fase posterior — no bloquean el core.
+Wissive no depende de ningún framework. Hay wrappers oficiales para React, Vue y Astro —
+`react`/`vue`/`astro` son *peer dependencies* opcionales, igual que Cuelume:
+
+```jsx
+// React — import { Wissive } from 'wissive/react'
+<Wissive name="mochi" size="lg" sound />
+```
+
+```vue
+<!-- Vue — import { Wissive } from 'wissive/vue' -->
+<script setup>
+import { Wissive } from 'wissive/vue';
+</script>
+<template>
+  <Wissive name="mochi" :options="{ size: 'lg', sound: true }" />
+</template>
+```
+
+```astro
+---
+// Astro — import Wissive from 'wissive/astro' (export default: así compila
+// Astro el template de un .astro, no hay export nombrado posible)
+import Wissive from 'wissive/astro';
+---
+<Wissive name="mochi" size="lg" sound />
+```
+
+El de Astro no resuelve un problema de timing — su `<script>` ya corre client-side sin
+ceremonia — resuelve repetición: usar el emoji en varias páginas sin copiar el `<script>` cada
+vez. Los de React/Vue sí empaquetan el patrón manual de siempre (`useEffect`/`onMounted` que
+llaman a `createEmoji()` en el montaje y `.destroy()` en el desmontaje), porque ahí sí hace
+falta esperar a que el DOM real exista. Fuente: [`src/react.tsx`](src/react.tsx),
+[`src/vue.ts`](src/vue.ts), [`src/astro/Wissive.astro`](src/astro/Wissive.astro).
+
+El patrón manual (sin depender de ningún wrapper) está documentado en
+[`examples/`](examples/) para los tres.
 
 ### 4.6 Distribución
 - Publicación en npm bajo un solo paquete (`wissive`), con *exports* separados por formato.
@@ -127,7 +187,6 @@ se evalúan como paquetes satélite en una fase posterior — no bloquean el cor
 
 Estas ideas quedan documentadas pero no forman parte del primer release (ver fases en
 `requerimientos.md`):
-- Wrappers oficiales para React/Vue.
 - Secuencias encadenadas de expresiones (`.playSequence()`).
 - Seguimiento de cursor con la mirada (ojos que se mueven, no solo cambian).
 - Temas de color personalizados por el usuario de la librería.

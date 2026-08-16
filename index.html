@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wissive — Emojis Vivos con Física de Resorte</title>
+  
+  <!-- Fonts Google: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #090a0f;
+      --bg-card: rgba(22, 24, 34, 0.75);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-card-hover: rgba(242, 169, 184, 0.35);
+      --accent: #f2a9b8;
+      --accent-glow: rgba(242, 169, 184, 0.25);
+      --text-main: #f0f2f8;
+      --text-sub: #9499ad;
+      --text-muted: #62677a;
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(242, 169, 184, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(127, 166, 217, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(242, 203, 78, 0.04) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    /* Header & Hero */
+    header {
+      padding: 3.5rem 1.5rem 2rem 1.5rem;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(242, 169, 184, 0.12);
+      border: 1px solid rgba(242, 169, 184, 0.3);
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 30%, #f2a9b8 70%, #7fa6d9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-sub);
+      line-height: 1.6;
+      max-width: 680px;
+      margin: 0 auto 2.5rem auto;
+    }
+
+    /* Hero Featured Stage */
+    .hero-stage {
+      background: rgba(22, 24, 34, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-card);
+      border-radius: 28px;
+      padding: 2.5rem;
+      max-width: 780px;
+      margin: 0 auto 3.5rem auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .hero-stage-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .hero-emoji-container {
+      width: 180px;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+      transition: transform 0.2s ease;
+    }
+
+    .hero-emoji-container:hover {
+      transform: scale(1.05);
+    }
+
+    .hero-selector {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .hero-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-sub);
+      padding: 0.4rem 0.9rem;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .hero-chip:hover, .hero-chip.active {
+      background: var(--accent);
+      color: #12131a;
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    /* Global Toolbar */
+    .toolbar-wrapper {
+      position: sticky;
+      top: 1.5rem;
+      z-index: 100;
+      max-width: 1100px;
+      margin: 0 auto 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .global-toolbar {
+      background: rgba(18, 20, 29, 0.85);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-label {
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tab-btn, .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-sub);
+      padding: 0.45rem 0.9rem;
+      border-radius: 10px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover, .action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #090a0f;
+      border-color: #ffffff;
+    }
+
+    .size-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-sub);
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .size-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    .size-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+
+    /* Grid Section */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem 1.5rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.75rem;
+    }
+
+    /* Glassmorphism Emoji Card */
+    .emoji-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--border-card);
+      border-radius: 24px;
+      padding: 1.75rem 1.25rem 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      transition: all 0.35 cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .emoji-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--card-color, var(--accent));
+      opacity: 0.8;
+    }
+
+    .emoji-card:hover {
+      border-color: var(--border-card-hover);
+      transform: translateY(-6px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 25px var(--accent-glow);
+    }
+
+    .card-slot {
+      width: 140px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
+    .card-info {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+
+    .card-emotion {
+      font-size: 0.825rem;
+      color: var(--text-sub);
+      text-transform: capitalize;
+      font-weight: 500;
+      margin-top: 0.15rem;
+    }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.35rem;
+      width: 100%;
+    }
+
+    .state-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-sub);
+      padding: 0.4rem 0;
+      border-radius: 8px;
+      font-size: 0.725rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .state-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .snippet-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+      background: rgba(242, 169, 184, 0.08);
+      border: 1px dashed rgba(242, 169, 184, 0.25);
+      color: var(--accent);
+      padding: 0.45rem 0;
+      border-radius: 10px;
+      font-size: 0.775rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .snippet-btn:hover {
+      background: var(--accent);
+      color: #090a0f;
+      border-style: solid;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #ffffff;
+      color: #090a0f;
+      padding: 0.85rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header & Hero Stage -->
+  <header>
+    <div class="brand-badge">✨ Wissive v0.1.0 — Emojis Vivos</div>
+    <h1>Catálogo Interactivo de Emojis</h1>
+    <p class="hero-subtitle">
+      Pasa el cursor sobre los emojis para ver cómo "notan" tu presencia (`near`), tócalos (`hover`) o haz clic (`click`) para ver su motor de física de resorte (spring physics) en acción.
+    </p>
+
+    <!-- Hero Featured Stage -->
+    <div class="hero-stage">
+      <div class="hero-stage-title">Inspección de Animación en Vivo</div>
+      <div class="hero-emoji-container" id="hero-slot"></div>
+      <div class="hero-selector" id="hero-selector"></div>
+    </div>
+  </header>
+
+  <!-- Sticky Global Toolbar -->
+  <div class="toolbar-wrapper">
+    <div class="global-toolbar">
+      <div class="toolbar-group">
+        <span class="toolbar-label">Filtrar:</span>
+        <button class="tab-btn active" data-filter="all">Todos (14)</button>
+        <button class="tab-btn" data-filter="happy">Felices</button>
+        <button class="tab-btn" data-filter="calm">Calmados</button>
+        <button class="tab-btn" data-filter="sad">Tristes</button>
+        <button class="tab-btn" data-filter="intense">Estrés / Enojo</button>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Forzar Estado:</span>
+        <button class="action-btn" id="btn-all-idle">Idle</button>
+        <button class="action-btn" id="btn-all-near">Near</button>
+        <button class="action-btn" id="btn-all-hover">Hover</button>
+        <button class="action-btn" id="btn-all-click">Click</button>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Tamaño:</span>
+        <button class="size-btn" data-size="xs">XS</button>
+        <button class="size-btn" data-size="sm">SM</button>
+        <button class="size-btn active" data-size="base">Base</button>
+        <button class="size-btn" data-size="lg">LG</button>
+        <button class="size-btn" data-size="xl">XL</button>
+        <button class="size-btn" data-size="2xl">2XL</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Main Cards Section -->
+  <main class="main-container">
+    <div class="section-header">
+      <h2 class="section-title">Colección Completa de Emojis</h2>
+    </div>
+
+    <div class="cards-grid" id="emoji-grid"></div>
+  </main>
+
+  <footer>
+    Wissive — Micro-librería de JavaScript/TypeScript sin dependencias runtime. Licencia MIT.
+  </footer>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">Copiado al portapapeles!</div>
+
+  <script type="module">
+    import { createEmoji, LIB } from './src/index.ts';
+
+    // Categorías de filtro
+    const CATEGORIES = {
+      happy: ['mochi', 'zumi', 'suri', 'pip'],
+      calm: ['nima', 'cota', 'snug', 'void'],
+      sad: ['lumo', 'dozy', 'wilt'],
+      intense: ['fidge', 'brix', 'knot'],
+    };
+
+    const grid = document.getElementById('emoji-grid');
+    const heroSlot = document.getElementById('hero-slot');
+    const heroSelector = document.getElementById('hero-selector');
+    const toast = document.getElementById('toast');
+    const cardInstances = {};
+    let heroInstance = null;
+    let currentHeroName = 'mochi';
+
+
+    // Toast helper
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // Render Hero Featured Stage
+    function setupHero(name) {
+      if (heroInstance) {
+        heroInstance.destroy();
+        heroSlot.innerHTML = '';
+      }
+      currentHeroName = name;
+      heroInstance = createEmoji(name, { target: heroSlot, size: 170 });
+      
+      // Update chip active states
+      document.querySelectorAll('.hero-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.getAttribute('data-name') === name);
+      });
+    }
+
+    // Build Hero Chips
+    Object.keys(LIB).slice(0, 7).forEach(name => {
+      const chip = document.createElement('button');
+      chip.className = 'hero-chip';
+      chip.setAttribute('data-name', name);
+      chip.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+      chip.addEventListener('click', () => setupHero(name));
+      heroSelector.appendChild(chip);
+    });
+
+    setupHero('mochi');
+
+    // Build Grid Cards for All 14 Emojis
+    Object.keys(LIB).forEach(name => {
+      const def = LIB[name];
+      const card = document.createElement('div');
+      card.className = 'emoji-card';
+      card.setAttribute('data-name', name);
+      card.style.setProperty('--card-color', def.baseColor);
+
+      card.innerHTML = `
+        <div class="card-slot" id="slot-${name}"></div>
+        <div class="card-info">
+          <div class="card-name">${def.name.charAt(0).toUpperCase() + def.name.slice(1)}</div>
+          <div class="card-emotion">${def.emotion}</div>
+        </div>
+        <div class="card-actions">
+          <button class="state-btn" data-state="idle">Idle</button>
+          <button class="state-btn" data-state="near">Near</button>
+          <button class="state-btn" data-state="hover">Hover</button>
+          <button class="state-btn" data-state="click">Click</button>
+          <button class="state-btn burst-btn" data-state="burst">✨ Pop</button>
+        </div>
+        <button class="snippet-btn">Copiar Snippet JS</button>
+      `;
+
+      grid.appendChild(card);
+
+      const slot = card.querySelector(`#slot-${name}`);
+      const inst = createEmoji(name, { target: slot, size: 130 });
+      cardInstances[name] = inst;
+
+      // Card quick state triggers
+      card.querySelectorAll('.state-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const state = btn.getAttribute('data-state');
+          if (state === 'burst') {
+            inst.triggerParticles(10);
+          } else {
+            inst.setEmotion(state);
+          }
+        });
+      });
+
+      // Snippet copy button
+      card.querySelector('.snippet-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const snippet = `import { createEmoji } from 'wissive';\n\nconst emoji = createEmoji('${name}', {\n  target: document.querySelector('#slot'),\n  size: 120,\n});`;
+        navigator.clipboard.writeText(snippet).then(() => {
+          showToast(`Snippet de ${def.name} copiado!`);
+        });
+      });
+    });
+
+    // Global Filter Tabs
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const filter = tab.getAttribute('data-filter');
+        document.querySelectorAll('.emoji-card').forEach(card => {
+          const name = card.getAttribute('data-name');
+          if (filter === 'all' || (CATEGORIES[filter] && CATEGORIES[filter].includes(name))) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Global State Force Actions
+    document.getElementById('btn-all-idle').addEventListener('click', () => {
+      Object.values(cardInstances).forEach(inst => inst.setEmotion('idle'));
+      if (heroInstance) heroInstance.setEmotion('idle');
+    });
+
+    document.getElementById('btn-all-near').addEventListener('click', () => {
+      Object.values(cardInstances).forEach(inst => inst.setEmotion('near'));
+      if (heroInstance) heroInstance.setEmotion('near');
+    });
+
+    document.getElementById('btn-all-hover').addEventListener('click', () => {
+      Object.values(cardInstances).forEach(inst => inst.setEmotion('hover'));
+      if (heroInstance) heroInstance.setEmotion('hover');
+    });
+
+    document.getElementById('btn-all-click').addEventListener('click', () => {
+      Object.values(cardInstances).forEach(inst => inst.setEmotion('click'));
+      if (heroInstance) heroInstance.setEmotion('click');
+    });
+
+    // Preset Size Controller (xs, sm, base, lg, xl, 2xl)
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const presetSize = btn.getAttribute('data-size');
+        Object.values(cardInstances).forEach(inst => {
+          if (inst.setSize) inst.setSize(presetSize);
+        });
+        if (heroInstance && heroInstance.setSize) {
+          heroInstance.setSize(presetSize);
+        }
+      });
+    });
+
+
+  </script>
+</body>
+</html>

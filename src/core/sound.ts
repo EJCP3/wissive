@@ -1,4 +1,18 @@
-import { play, setVolume } from 'cuelume';
+// Import dinámico: cuelume es peer dependency opcional. Un import estático
+// rompería la carga entera de la librería para quien no la tenga instalada
+// (el caso normal). Se resuelve una sola vez y se cachea la promesa.
+type CuelumeModule = {
+  play: (name: any, options?: { volume?: number }) => void;
+  setVolume: (volume: number) => void;
+} | null;
+
+let cuelumePromise: Promise<CuelumeModule> | undefined;
+function getCuelume(): Promise<CuelumeModule> {
+  if (!cuelumePromise) {
+    cuelumePromise = import(/* @vite-ignore */ 'cuelume').catch(() => null);
+  }
+  return cuelumePromise;
+}
 
 export type CueSoundType =
   | 'chime'
@@ -24,9 +38,11 @@ export class SoundEngine {
   private volume: number = 0.6;
 
   constructor() {
-    try {
-      setVolume(this.volume);
-    } catch (_) {}
+    getCuelume().then((m) => {
+      try {
+        m?.setVolume(this.volume);
+      } catch (_) {}
+    });
   }
 
   public setEnabled(enabled: boolean) {
@@ -39,18 +55,22 @@ export class SoundEngine {
 
   public setVolumeLevel(vol: number) {
     this.volume = Math.max(0, Math.min(1, vol));
-    try {
-      setVolume(this.volume);
-    } catch (_) {}
+    getCuelume().then((m) => {
+      try {
+        m?.setVolume(this.volume);
+      } catch (_) {}
+    });
   }
 
   public playCue(cueName: CueSoundType, options: { volume?: number } = {}) {
     if (!this.enabled) return;
-    try {
-      play(cueName as any, { volume: options.volume ?? this.volume });
-    } catch (e) {
-      // Ignorar restricciones de autoplay si aún no se ha interactuado
-    }
+    getCuelume().then((m) => {
+      try {
+        m?.play(cueName as any, { volume: options.volume ?? this.volume });
+      } catch (e) {
+        // Ignorar restricciones de autoplay si aún no se ha interactuado
+      }
+    });
   }
 
   public playSound(emotion: string, action: 'hover' | 'click' | 'bounce') {

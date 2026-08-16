@@ -8,10 +8,41 @@ import { attachEventListeners } from './events/listeners';
 import { soundEngine } from './core/sound';
 import { ParticleEmitter } from './render/particles';
 import { DragPhysics, DragPhysicsState } from './core/drag';
+import { isReducedMotionPreferred, subscribeToReducedMotion } from './core/a11y';
+import { blendColors, ThemeOption } from './core/theme';
+import { applyIdleMotion, applyStateMotion } from './core/motion';
+import { createSequencePlayer, SequenceStep, SequenceOptions } from './core/sequence';
+import { resolveAutonomousStatePool, pickWithoutRepeat } from './emojis/states';
+
+/** Cuánta animación de personalidad conserva cada estado de interacción */
+const INTERACTION_MOTION_INTENSITY: Record<string, number> = {
+  idle: 1,
+  near: 0.7,
+  hover: 0.5,
+  click: 0.35,
+};
+
+
+export type WissivePresetSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl';
+export type WissiveSize = WissivePresetSize | number;
+
+export const SIZE_PRESETS: Record<WissivePresetSize, number> = {
+  xs: 48,
+  sm: 80,
+  base: 120,
+  lg: 160,
+  xl: 200,
+  '2xl': 240,
+};
+
+export function resolveSize(size: WissiveSize = 'base'): number {
+  if (typeof size === 'number') return size;
+  return SIZE_PRESETS[size] ?? 120;
+}
 
 export interface WissiveOptions {
   target: HTMLElement;
-  size?: number;
+  size?: WissiveSize;
   sound?: boolean;
   interactive?: boolean;
   draggable?: boolean;
@@ -19,9 +50,22 @@ export interface WissiveOptions {
   flipX?: boolean;
   emphasis?: boolean;
   gazeTracking?: boolean;
+  ambientParticles?: boolean;
+  /** Visita reacciones al azar cuando está en reposo, para que se sienta vivo (default: true) */
+  autonomousStates?: boolean;
+  /** Qué estados puede visitar al deambular (default: `definition.autonomousStatePool` o AUTONOMOUS_STATES) */
+  autonomousStatePool?: InteractionState[];
+  reducedMotion?: 'auto' | boolean;
+  theme?: ThemeOption;
 }
 
 export interface WissiveInstance {
+  id: string;
+  name: string;
+  emotionCategory: string;
+  getElement: () => HTMLElement;
+  getPosition: () => { x: number; y: number };
+  getCurrentState: () => InteractionState;
   setEmotion: (state: InteractionState) => void;
   spin: (turns?: number) => void;
   bounce: () => void;
@@ -31,8 +75,20 @@ export interface WissiveInstance {
   setDraggable: (enabled: boolean) => void;
   setFlipX: (flip: boolean) => void;
   setEmphasis: (emphasis: boolean) => void;
+  setAmbientParticles: (enabled: boolean) => void;
+  setAutonomousStates: (enabled: boolean) => void;
+  setAutonomousStatePool: (pool: InteractionState[]) => void;
+  setReducedMotion: (setting: 'auto' | boolean) => void;
+  setTheme: (theme: ThemeOption) => void;
+  setSize: (size: WissiveSize) => void;
+  triggerParticles: (count?: number) => void;
+  playSequence: (steps: SequenceStep[], options?: SequenceOptions) => void;
+  stopSequence: () => void;
+  isSequencePlaying: () => boolean;
   destroy: () => void;
 }
+
+
 
 export function createEmoji(
   name: string,
@@ -40,7 +96,7 @@ export function createEmoji(
 ): WissiveInstance {
   const {
     target,
-    size = 120,
+    size = 'base',
     interactive = true,
     draggable: initialDraggable = true,
     nearRadius = 120,
@@ -48,25 +104,65 @@ export function createEmoji(
     flipX: initialFlipX = false,
     emphasis: initialEmphasis = false,
     gazeTracking: initialGazeTracking = false,
+    ambientParticles: initialAmbientParticles = true,
+    autonomousStates: initialAutonomousStates = true,
+    autonomousStatePool: initialAutonomousStatePool,
+    reducedMotion: initialReducedMotion = 'auto',
+    theme: initialTheme = 'auto',
   } = options;
 
   const definition: EmojiDefinition = getEmojiDefinition(name) || getEmojiDefinition('mochi')!;
   const motion = definition.motion;
 
+  let currentSize = resolveSize(size);
+  let userReducedMotionSetting: 'auto' | boolean = initialReducedMotion;
+  let userThemeSetting: ThemeOption = initialTheme;
+  let currentColor = definition.baseColor;
+  const particleEmotion = definition.particleEmotion || definition.emotion;
+  const soundEmotion = definition.soundEmotion || definition.emotion;
+
+  const isReducedMotionActive = (): boolean => {
+    if (typeof userReducedMotionSetting === 'boolean') return userReducedMotionSetting;
+    return isReducedMotionPreferred();
+  };
+
+
+
+
   // Wrapper — absorbs drag translation so the grid layout stays stable
   const wrapper = document.createElement('div');
   wrapper.className = 'wissive-wrapper';
-  wrapper.style.width = `${size}px`;
-  wrapper.style.height = `${size}px`;
+  wrapper.style.width = `${currentSize}px`;
+  wrapper.style.height = `${currentSize}px`;
   wrapper.style.display = 'inline-block';
   wrapper.style.position = 'relative';
 
   const container = document.createElement('div');
   container.className = 'wissive-emoji';
   container.setAttribute('role', 'img');
-  container.setAttribute('aria-label', `${definition.name} (${definition.emotion}) emoji`);
-  container.style.width = `${size}px`;
-  container.style.height = `${size}px`;
+  if (interactive) {
+    container.setAttribute('tabindex', '0');
+  }
+  
+  const stateLabels: Partial<Record<InteractionState, string>> = {
+    idle: 'Reposo',
+    near: 'Cerca',
+    hover: 'Hover',
+    click: 'Presionado',
+  };
+
+
+  const updateAriaLabel = (st: InteractionState) => {
+    container.setAttribute(
+      'aria-label',
+      `${definition.name} (${definition.emotion}) emoji - Estado: ${stateLabels[st] || st}`
+    );
+  };
+
+  updateAriaLabel('idle');
+
+  container.style.width = `${currentSize}px`;
+  container.style.height = `${currentSize}px`;
   container.style.display = 'inline-block';
   container.style.userSelect = 'none';
   container.style.cursor = interactive ? 'pointer' : 'default';
@@ -76,11 +172,21 @@ export function createEmoji(
   wrapper.appendChild(container);
   target.appendChild(wrapper);
 
+  const unsubscribeReducedMotion = subscribeToReducedMotion(() => {
+    render();
+  });
+
   let isFlipX = initialFlipX;
   let isEmphasis = initialEmphasis;
   let isGazeTracking = initialGazeTracking;
   let isSoundEnabled = initialSound;
   let isDraggable = initialDraggable;
+  let isAmbientParticlesEnabled = initialAmbientParticles;
+  let isAutonomousStatesEnabled = initialAutonomousStates;
+  let autonomousStatePool: InteractionState[] = resolveAutonomousStatePool(
+    initialAutonomousStatePool,
+    definition.autonomousStatePool
+  );
 
   const stateManager = new StateManager();
   const initialPool = definition.expressions.idle;
@@ -102,7 +208,8 @@ export function createEmoji(
 
   // ─── Particle System ───────────────────────────────────────────────
   // Attached to wrapper (not container) because container.innerHTML is replaced every frame
-  const particles = new ParticleEmitter(wrapper, size);
+  const particles = new ParticleEmitter(wrapper, currentSize);
+
 
   // ─── Drag Physics State ────────────────────────────────────────────
   let dragState: DragPhysicsState = {
@@ -127,12 +234,12 @@ export function createEmoji(
       {
         onDragStart: () => {
           // Emit particles trail while dragging
-          if (isSoundEnabled) soundEngine.playSound(definition.emotion, 'click');
+          if (isSoundEnabled) soundEngine.playSound(soundEmotion, 'click');
         },
         onDragEnd: () => {
           // Burst particles on release (toss)
-          particles.burst(definition.emotion, 10);
-          if (isSoundEnabled) soundEngine.playSound(definition.emotion, 'bounce');
+          particles.burst(particleEmotion, 10);
+          if (isSoundEnabled) soundEngine.playSound(soundEmotion, 'bounce');
         },
       }
     );
@@ -145,9 +252,10 @@ export function createEmoji(
   // ─── Unified Transform ─────────────────────────────────────────────
   // Combines: breathing + drag offset + drag elastic deformation
   const applyTransform = () => {
-    // Breathing base (overridden by drag deformation when dragging/bouncing)
-    const breathSpeed = motion.idleSpeed * 0.35;
-    const breathAmp = 0.04;
+    // Breathing base (overridden by drag deformation when dragging/bouncing or disabled if reduced motion)
+    const isReduced = isReducedMotionActive();
+    const breathSpeed = isReduced ? 0 : motion.idleSpeed * 0.35;
+    const breathAmp = isReduced ? 0 : 0.04;
     const breathScX = 1 + breathAmp * Math.cos(idleTime * breathSpeed);
     const breathScY = 1 - breathAmp * Math.sin(idleTime * breathSpeed);
 
@@ -180,49 +288,42 @@ export function createEmoji(
   // ─── Render ────────────────────────────────────────────────────────
   const render = () => {
     const currentParams = springs.getValues();
+    const currentState = stateManager.getState();
+
+    // Transición suave de color de tema (en 'auto' se conserva el color original predeterminado)
+    let targetThemeColor = definition.baseColor;
+    if (typeof userThemeSetting === 'object' && userThemeSetting.baseColor) {
+      targetThemeColor = userThemeSetting.baseColor;
+    }
+
+    currentColor = blendColors(currentColor, targetThemeColor, 0.15);
+
 
     if (isBlinking) {
       currentParams.eyeOpen = 0.05;
     }
 
-    if (stateManager.getState() === 'idle') {
-      const speed = motion.idleSpeed;
-      const amp = motion.idleAmplitude;
+    // Cada estado tiene firma propia; si no la tiene (idle/near/hover/click),
+    // manda la animación de personalidad del emoji, atenuada según el estado.
+    if (!isReducedMotionActive()) {
+      const hasStateMotion = applyStateMotion(
+        currentState as string,
+        currentParams,
+        idleTime,
+        motion.idleSpeed,
+        motion.idleAmplitude
+      );
 
-      switch (motion.motionType) {
-        case 'bouncy':
-          currentParams.bob += Math.abs(Math.sin(idleTime * speed)) * amp - amp * 0.5;
-          break;
-        case 'flutter':
-          currentParams.shiftX += Math.sin(idleTime * speed) * amp;
-          currentParams.bob += Math.cos(idleTime * (speed * 0.7)) * (amp * 0.5);
-          break;
-        case 'float':
-          currentParams.bob += Math.sin(idleTime * speed) * amp;
-          currentParams.shiftX += Math.cos(idleTime * (speed * 0.6)) * (amp * 0.8);
-          break;
-        case 'jitter':
-          currentParams.shiftX += (Math.random() - 0.5) * amp;
-          currentParams.bob += (Math.random() - 0.5) * amp;
-          break;
-        case 'fiery':
-          currentParams.bob += Math.sin(idleTime * speed) * amp;
-          break;
-        case 'dizzy':
-          currentParams.shiftX += Math.sin(idleTime * speed) * amp;
-          currentParams.bob += Math.cos(idleTime * speed) * (amp * 0.7);
-          break;
-        case 'droop':
-          currentParams.bob += (Math.sin(idleTime * speed) + 0.5) * amp;
-          break;
-        case 'pop':
-          currentParams.bob += -Math.abs(Math.sin(idleTime * speed)) * amp;
-          break;
-        case 'serene':
-        case 'calm':
-        default:
-          currentParams.bob += Math.sin(idleTime * speed) * amp;
-          break;
+      if (!hasStateMotion) {
+        const intensity = INTERACTION_MOTION_INTENSITY[currentState as string] ?? 1;
+        applyIdleMotion(
+          motion.motionType,
+          currentParams,
+          idleTime,
+          motion.idleSpeed,
+          motion.idleAmplitude,
+          intensity
+        );
       }
     }
 
@@ -231,12 +332,14 @@ export function createEmoji(
 
     container.innerHTML = buildFace(
       definition.silhouette,
-      definition.baseColor,
+      currentColor,
       currentParams,
-      size,
-      { flipX: isFlipX, emphasis: isEmphasis }
+      currentSize,
+      { flipX: isFlipX, emphasis: isEmphasis },
+      idleTime
     );
   };
+
 
   // ─── Expression Transitions ────────────────────────────────────────
   const transitionToVariant = (newState: InteractionState = stateManager.getState()) => {
@@ -267,8 +370,29 @@ export function createEmoji(
   };
 
   const updateState = (newState: InteractionState) => {
+    updateAriaLabel(newState);
     transitionToVariant(newState);
   };
+
+  // ─── Expression Timeline ───────────────────────────────────────────
+  const sequencePlayer = createSequencePlayer({
+    resolveStep(step) {
+      // Un paso puede referirse a un estado (reutiliza su pool de expresiones)
+      // y/o traer parámetros crudos, que mandan sobre el estado.
+      const fromState = step.state
+        ? stateManager.pickVariant(
+            stateManager.resolvePool(definition.expressions, step.state),
+            step.state
+          )
+        : {};
+      return { ...fromState, ...step.params };
+    },
+    applyStep(params) {
+      springs.setTargets(params);
+      sharedLoop.add(tick);
+    },
+  });
+
 
   // ─── Main Animation Loop ──────────────────────────────────────────
   const tick = (dt: number) => {
@@ -314,7 +438,8 @@ export function createEmoji(
     const delay = min + Math.random() * (max - min);
 
     idleTimeoutId = window.setTimeout(() => {
-      if (stateManager.getState() === 'idle') {
+      // Una secuencia en curso manda sobre el ciclado aleatorio de idle
+      if (stateManager.getState() === 'idle' && !sequencePlayer.isPlaying()) {
         transitionToVariant('idle');
       }
       scheduleNextIdleVariant();
@@ -333,7 +458,7 @@ export function createEmoji(
     const delay = minDelay + Math.random() * (maxDelay - minDelay);
 
     glanceTimeoutId = window.setTimeout(() => {
-      if (stateManager.getState() === 'idle' && !isGazeTracking) {
+      if (stateManager.getState() === 'idle' && !isGazeTracking && !sequencePlayer.isPlaying()) {
         const directions = [
           { x: -9, y: 0 },
           { x: 9, y: 0 },
@@ -360,6 +485,73 @@ export function createEmoji(
 
   scheduleNextGlance();
 
+  // ─── Autonomous Ambient Particles ──────────────────────────────────
+  let ambientParticleTimeoutId: number | null = null;
+
+  const scheduleNextAmbientParticle = () => {
+    const minDelay = 3500;
+    const maxDelay = 8500;
+    const delay = minDelay + Math.random() * (maxDelay - minDelay);
+
+    ambientParticleTimeoutId = window.setTimeout(() => {
+      if (isAmbientParticlesEnabled && !isReducedMotionActive()) {
+        const currentState = stateManager.getState();
+        if (currentState === 'idle' || currentState === 'near' || currentState === 'hover') {
+          // Emit 2 to 4 ambient particles around the emoji
+          const count = Math.floor(2 + Math.random() * 3);
+          particles.burst(particleEmotion, count);
+        }
+      }
+      scheduleNextAmbientParticle();
+    }, delay);
+  };
+
+  scheduleNextAmbientParticle();
+
+  // ─── Autonomous State Wandering ─────────────────────────────────────
+  // Sin esto el emoji solo cambia de estado por interacción del usuario o
+  // por llamadas explícitas — en reposo se queda pegado a "idle" para
+  // siempre. Aquí, de tanto en tanto, visita solo una reacción real (nunca
+  // los estados de "ciclo de producto"/"agente" como uploading o thinking:
+  // esos los debe decidir la app anfitriona porque significan algo, no son
+  // decoración).
+  let autonomousTimeoutId: number | null = null;
+  let autonomousHoldTimeoutId: number | null = null;
+  let lastAutonomousState: InteractionState | null = null;
+
+  const scheduleNextAutonomousState = () => {
+    const minDelay = 5000;
+    const maxDelay = 11000;
+    const delay = minDelay + Math.random() * (maxDelay - minDelay);
+
+    autonomousTimeoutId = window.setTimeout(() => {
+      const canWander =
+        isAutonomousStatesEnabled &&
+        autonomousStatePool.length > 0 &&
+        !isReducedMotionActive() &&
+        !sequencePlayer.isPlaying() &&
+        stateManager.getState() === 'idle' &&
+        !isNearActive && !isHoverActive && !isClickActive;
+
+      if (canWander) {
+        const next = pickWithoutRepeat(autonomousStatePool, lastAutonomousState);
+        lastAutonomousState = next;
+        updateState(next);
+
+        const holdTime = 1800 + Math.random() * 2200;
+        autonomousHoldTimeoutId = window.setTimeout(() => {
+          // Si el usuario interactuó durante la visita, eso manda; si no, vuelve a idle
+          if (stateManager.getState() === next && !isNearActive && !isHoverActive && !isClickActive) {
+            updateState('idle');
+          }
+        }, holdTime);
+      }
+      scheduleNextAutonomousState();
+    }, delay);
+  };
+
+  scheduleNextAutonomousState();
+
   // ─── Timer Cleanup ─────────────────────────────────────────────────
   const stopTimers = () => {
     if (idleTimeoutId !== null) {
@@ -382,6 +574,18 @@ export function createEmoji(
       clearTimeout(glanceResetTimeoutId);
       glanceResetTimeoutId = null;
     }
+    if (ambientParticleTimeoutId !== null) {
+      clearTimeout(ambientParticleTimeoutId);
+      ambientParticleTimeoutId = null;
+    }
+    if (autonomousTimeoutId !== null) {
+      clearTimeout(autonomousTimeoutId);
+      autonomousTimeoutId = null;
+    }
+    if (autonomousHoldTimeoutId !== null) {
+      clearTimeout(autonomousHoldTimeoutId);
+      autonomousHoldTimeoutId = null;
+    }
   };
 
   // ─── Event Listeners ───────────────────────────────────────────────
@@ -400,7 +604,7 @@ export function createEmoji(
       {
         onHoverStart: () => {
           isHoverActive = true;
-          if (isSoundEnabled) soundEngine.playSound(definition.emotion, 'hover');
+          if (isSoundEnabled) soundEngine.playSound(soundEmotion, 'hover');
           updateState(determineCurrentState());
         },
         onHoverEnd: () => {
@@ -409,8 +613,10 @@ export function createEmoji(
         },
         onClickStart: () => {
           isClickActive = true;
-          if (isSoundEnabled) soundEngine.playSound(definition.emotion, 'click');
-          particles.burst(definition.emotion, 8);
+          if (isSoundEnabled) soundEngine.playSound(soundEmotion, 'click');
+          if (!isReducedMotionActive()) {
+            particles.burst(particleEmotion, 8);
+          }
           updateState(determineCurrentState());
         },
         onClickEnd: () => {
@@ -432,9 +638,34 @@ export function createEmoji(
     );
   }
 
+  const instanceId = 'wissive-' + Math.random().toString(36).substring(2, 9);
+
   // ─── Public API ────────────────────────────────────────────────────
   return {
+    id: instanceId,
+    name: definition.name,
+    emotionCategory: definition.emotion,
+    getElement() {
+      return container;
+    },
+    getPosition() {
+      const rect = container.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      };
+    },
+    getCurrentState() {
+      return stateManager.getState();
+    },
     setEmotion(state: InteractionState) {
+      if (!isReducedMotionActive()) {
+        if (state === 'click') {
+          particles.burst(particleEmotion, 8);
+        } else if (state === 'hover') {
+          particles.burst(particleEmotion, 4);
+        }
+      }
       updateState(state);
     },
     spin(turns = 1) {
@@ -443,7 +674,10 @@ export function createEmoji(
       sharedLoop.add(tick);
     },
     bounce() {
-      if (isSoundEnabled) soundEngine.playSound(definition.emotion, 'bounce');
+      if (isSoundEnabled) soundEngine.playSound(soundEmotion, 'bounce');
+      if (!isReducedMotionActive()) {
+        particles.burst(particleEmotion, 5);
+      }
       const current = springs.getValues().bob || 0;
       springs.setTargets({ bob: current - 14 });
       sharedLoop.add(tick);
@@ -481,8 +715,51 @@ export function createEmoji(
       isEmphasis = emphasis;
       render();
     },
+    setAmbientParticles(enabled: boolean) {
+      isAmbientParticlesEnabled = enabled;
+    },
+    setAutonomousStates(enabled: boolean) {
+      isAutonomousStatesEnabled = enabled;
+    },
+    setAutonomousStatePool(pool: InteractionState[]) {
+      autonomousStatePool = pool;
+    },
+    setReducedMotion(setting: 'auto' | boolean) {
+      userReducedMotionSetting = setting;
+      render();
+    },
+    setTheme(theme: ThemeOption) {
+      userThemeSetting = theme;
+      render();
+    },
+    setSize(newSize: WissiveSize) {
+      currentSize = resolveSize(newSize);
+      wrapper.style.width = `${currentSize}px`;
+      wrapper.style.height = `${currentSize}px`;
+      container.style.width = `${currentSize}px`;
+      container.style.height = `${currentSize}px`;
+      particles.resize(currentSize);
+      render();
+    },
+    triggerParticles(count = 8) {
+      if (!isReducedMotionActive()) {
+        particles.burst(particleEmotion, count);
+      }
+    },
+    playSequence(steps: SequenceStep[], options?: SequenceOptions) {
+      sequencePlayer.play(steps, options);
+    },
+    stopSequence() {
+      sequencePlayer.stop();
+      transitionToVariant(stateManager.getState());
+    },
+    isSequencePlaying() {
+      return sequencePlayer.isPlaying();
+    },
     destroy() {
+      sequencePlayer.stop();
       stopTimers();
+      unsubscribeReducedMotion();
       sharedLoop.remove(tick);
       particles.destroy();
       if (dragPhysics) dragPhysics.destroy();
@@ -502,4 +779,14 @@ export * from './render/svg';
 export * from './core/sound';
 export * from './core/drag';
 export * from './render/particles';
+export * from './core/a11y';
+export * from './core/theme';
+export * from './core/motion';
+export * from './core/sequence';
+export * from './core/group';
 export * from './emojis/catalog';
+export * from './emojis/custom';
+export * from './emojis/states';
+
+
+

@@ -1,0 +1,20 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="estados" class="doc-section">
+  <h2>Estados de interacción</h2>
+  <p>Cada estado dispara un pool de variantes; se sortea una evitando repetir la anterior.</p>
+  <table>
+    <thead>
+      <tr><th>Estado</th><th>Disparador</th><th>Descripción</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>idle</code></td><td>Sin interacción</td><td>Reposo, respiración lenta.</td></tr>
+      <tr><td><code>near</code></td><td>Cursor se acerca (radio configurable)</td><td>El emoji "nota" que algo se acerca.</td></tr>
+      <tr><td><code>hover</code></td><td><code>mouseenter</code> / <code>mouseleave</code></td><td>Cursor directamente encima.</td></tr>
+      <tr><td><code>click</code></td><td><code>mousedown</code>/<code>up</code>, <code>touchstart</code>, Enter/Espacio</td><td>Interacción directa.</td></tr>
+    </tbody>
+  </table>
+  <CodeBlock code={`emoji.setEmotion('hover'); // control programático, sin mouse\nemoji.destroy();           // limpieza: RAF + listeners + timers`} />
+</section>

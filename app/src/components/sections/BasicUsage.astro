@@ -1,0 +1,61 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="uso-basico" class="doc-section">
+  <h2>Uso básico</h2>
+  <p>Tres formas comunes de usar <code>createEmoji()</code>, con el código real de cada una.</p>
+
+  <div class="example-card" id="ej-basico">
+    <div class="example-card-head">
+      <span class="example-card-title">Emoji básico</span>
+      <div class="example-tabs">
+        <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+        <button class="example-tab" data-tab="code" type="button">Code</button>
+      </div>
+    </div>
+    <div class="example-preview">
+      <div id="example-basic-slot" style="width: 100px; height: 100px;"></div>
+    </div>
+    <div class="example-code" hidden>
+      <CodeBlock code="createEmoji('mochi', { target, size: 100 });" />
+    </div>
+  </div>
+
+  <div class="example-card" id="ej-programatico">
+    <div class="example-card-head">
+      <span class="example-card-title">Control programático</span>
+      <div class="example-tabs">
+        <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+        <button class="example-tab" data-tab="code" type="button">Code</button>
+      </div>
+    </div>
+    <div class="example-preview">
+      <div id="example-prog-slot" style="width: 100px; height: 100px;"></div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn" id="ex-prog-happy">Feliz</button>
+        <button class="btn" id="ex-prog-sad">Triste</button>
+        <button class="btn" id="ex-prog-bounce">Rebotar</button>
+      </div>
+    </div>
+    <div class="example-code" hidden>
+      <CodeBlock code={`const emoji = createEmoji('mochi', { target });\n\nemoji.setEmotion('happy');\nemoji.setEmotion('sad');\nemoji.bounce();`} />
+    </div>
+  </div>
+
+  <div class="example-card" id="ej-decorativo">
+    <div class="example-card-head">
+      <span class="example-card-title">Solo decorativo (sin listeners)</span>
+      <div class="example-tabs">
+        <button class="example-tab active" data-tab="preview" type="button">Preview</button>
+        <button class="example-tab" data-tab="code" type="button">Code</button>
+      </div>
+    </div>
+    <div class="example-preview">
+      <div id="example-decor-slot" style="width: 100px; height: 100px;"></div>
+    </div>
+    <div class="example-code" hidden>
+      <CodeBlock code={`// No reacciona a hover/click/near; solo su animación de personalidad\ncreateEmoji('nima', { target, interactive: false });`} />
+    </div>
+  </div>
+</section>

@@ -1,0 +1,88 @@
+:root {
+  --bg-light: #ffffff;
+  --bg-docs: #f5f5fa;
+  --bg-card: #ffffff;
+  --bg-code: #ffffff;
+  --bg-inline-code: #e8eaee;
+  --border-code: rgba(0, 0, 0, 0.08);
+  --shadow-code: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --border-soft: rgba(0, 0, 0, 0.09);
+  --text-dark: #18181b;
+  --text-sub: #71717a;
+  --accent: #f2a9b8;
+  --link-accent: #6d5ff0;
+  --nav-surface: rgba(255, 255, 255, 0.85);
+  --pill-active-bg: #18181b;
+  --pill-active-fg: #ffffff;
+  --pill-soft-bg: #efefe6;
+  /* Syntax highlighting */
+  --tok-kw: #c2410c;
+  --tok-str: #15803d;
+  --tok-com: #a1a1aa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-light: #1c1c22;
+    --bg-docs: #0b0b0f;
+    --bg-card: #1c1c22;
+    --bg-code: #141419;
+    --bg-inline-code: rgba(255, 255, 255, 0.08);
+    --border-code: rgba(255, 255, 255, 0.12);
+    --shadow-code: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --border-soft: rgba(255, 255, 255, 0.1);
+    --text-dark: #f2f2f5;
+    --text-sub: #9a9aa5;
+    --link-accent: #a494ff;
+    --nav-surface: rgba(20, 20, 24, 0.85);
+    --pill-active-bg: #f2f2f5;
+    --pill-active-fg: #18181b;
+    --pill-soft-bg: #2a2a33;
+    --tok-kw: #fb923c;
+    --tok-str: #4ade80;
+    --tok-com: #8b8b96;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg-light: #1c1c22;
+  --bg-docs: #0b0b0f;
+  --bg-card: #1c1c22;
+  --bg-code: #141419;
+  --bg-inline-code: rgba(255, 255, 255, 0.08);
+  --border-code: rgba(255, 255, 255, 0.12);
+  --shadow-code: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --text-dark: #f2f2f5;
+  --text-sub: #9a9aa5;
+  --link-accent: #a494ff;
+  --nav-surface: rgba(20, 20, 24, 0.85);
+  --pill-active-bg: #f2f2f5;
+  --pill-active-fg: #18181b;
+  --pill-soft-bg: #2a2a33;
+  --tok-kw: #fb923c;
+  --tok-str: #4ade80;
+  --tok-com: #8b8b96;
+}
+
+:root[data-theme="light"] {
+  --bg-light: #ffffff;
+  --bg-docs: #f5f5fa;
+  --bg-card: #ffffff;
+  --bg-code: #ffffff;
+  --bg-inline-code: #e8eaee;
+  --border-code: rgba(0, 0, 0, 0.08);
+  --shadow-code: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --border-soft: rgba(0, 0, 0, 0.09);
+  --text-dark: #18181b;
+  --text-sub: #71717a;
+  --accent: #f2a9b8;
+  --link-accent: #6d5ff0;
+  --nav-surface: rgba(255, 255, 255, 0.85);
+  --pill-active-bg: #18181b;
+  --pill-active-fg: #ffffff;
+  --pill-soft-bg: #efefe6;
+  --tok-kw: #c2410c;
+  --tok-str: #15803d;
+  --tok-com: #a1a1aa;
+}

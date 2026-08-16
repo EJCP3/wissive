@@ -1,0 +1,113 @@
+---
+---
+
+<section id="casos-de-uso" class="doc-section">
+  <h2>Casos de uso</h2>
+  <p>
+    No es solo un catálogo para mirar: cada personaje está pensado para vivir dentro de
+    una interfaz real. Estos son mockups de UI armados con CSS — el emoji de cada uno es
+    una instancia real, montada con <code>createEmoji()</code>.
+  </p>
+
+  <div class="usecase-grid">
+    <div class="usecase-card">
+      <div class="usecase-card-label">Ícono de botón</div>
+      <div class="usecase-demo">
+        <button class="uc-like-btn" type="button">
+          <span class="usecase-slot" id="uc-slot-btn" style="width: 26px; height: 26px;"></span>
+          <span class="uc-like-btn-text">Me gusta <span class="uc-like-count">128</span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Logo / marca</div>
+      <div class="usecase-demo">
+        <div class="uc-navbar">
+          <span class="usecase-slot" id="uc-slot-logo" style="width: 30px; height: 30px;"></span>
+          <span class="uc-navbar-brand">nimbly.</span>
+          <span class="uc-navbar-links">Inicio · Precios · Blog</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Estado vacío</div>
+      <div class="usecase-demo uc-empty">
+        <span class="usecase-slot" id="uc-slot-empty" style="width: 56px; height: 56px;"></span>
+        <p class="uc-empty-text">No hay resultados todavía</p>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Notificación</div>
+      <div class="usecase-demo">
+        <div class="uc-toast">
+          <span class="usecase-slot" id="uc-slot-toast" style="width: 30px; height: 30px;"></span>
+          <div class="uc-toast-text">
+            <strong>Listo</strong>
+            <span>Tus cambios se guardaron.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Asistente / chat</div>
+      <div class="usecase-demo">
+        <div class="uc-chat">
+          <span class="usecase-slot" id="uc-slot-chat" style="width: 44px; height: 44px;"></span>
+          <div class="uc-chat-bubble">¡Hola! ¿en qué te ayudo hoy?</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Estado de carga</div>
+      <div class="usecase-demo uc-loading">
+        <span class="usecase-slot" id="uc-slot-loading" style="width: 40px; height: 40px;"></span>
+        <div class="uc-loading-bar"><div class="uc-loading-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Feedback de formulario</div>
+      <div class="usecase-demo uc-form">
+        <label class="uc-field">
+          <span class="uc-field-label">Email</span>
+          <div class="uc-field-row">
+            <input class="uc-input" type="text" value="hola@wissive.dev" disabled />
+            <span class="usecase-slot" id="uc-slot-form" style="width: 26px; height: 26px;"></span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Mascota flotante</div>
+      <div class="usecase-demo">
+        <div class="uc-viewport-frame">
+          <div class="uc-viewport-line"></div>
+          <div class="uc-viewport-line short"></div>
+          <span class="usecase-slot uc-floating-slot" id="uc-slot-float" style="width: 36px; height: 36px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="usecase-card">
+      <div class="usecase-card-label">Avatar de usuario</div>
+      <div class="usecase-demo">
+        <div class="uc-comment">
+          <span class="usecase-slot" id="uc-slot-avatar" style="width: 40px; height: 40px;"></span>
+          <div class="uc-comment-body">
+            <div class="uc-comment-head">
+              <strong>Caro</strong>
+              <span class="uc-comment-time">hace 2h</span>
+            </div>
+            <p class="uc-comment-text">¡Se ve buenísimo, felicitaciones!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

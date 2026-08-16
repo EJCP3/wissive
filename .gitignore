@@ -3,8 +3,10 @@ dist
 .DS_Store
 *.log
 ejemplp
-requerimientos.md
+hoja-contactos.html
+Pictures/
+CHANGELOG.md
 desing.md
+requerimientos.md
 wissive.md
-app
-index.html
+

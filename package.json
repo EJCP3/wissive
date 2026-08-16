@@ -11,15 +11,38 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/wissive.js",
       "require": "./dist/wissive.cjs"
-    }
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js",
+      "require": "./dist/vue.cjs"
+    },
+    "./astro": "./src/astro/Wissive.astro"
   },
   "files": [
-    "dist"
+    "dist",
+    "src/astro"
   ],
+  "sideEffects": false,
   "scripts": {
-    "dev": "vite app",
-    "app": "vite app",
-    "build": "tsc && vite build",
+    "dev": "astro dev --root app",
+    "app": "astro dev --root app",
+    "build": "tsc && vite build && vite build --config vite.umd.config.ts",
+    "build:app": "astro build --root app",
+    "preview:app": "astro preview --root app",
+    "check:motion": "node --experimental-strip-types src/core/motion.check.ts",
+    "check:sequence": "node --experimental-strip-types src/core/sequence.check.ts",
+    "check:particles": "node --experimental-strip-types src/render/particles.check.ts",
+    "check:accessories": "node --experimental-strip-types src/render/accessories.check.ts",
+    "check:knot": "node --experimental-strip-types src/render/knot.check.ts",
+    "check:custom": "node --experimental-strip-types src/emojis/custom.check.ts",
+    "sheet": "node --experimental-strip-types scripts/contact-sheet.ts",
+    "check": "pnpm run check:motion && pnpm run check:sequence && pnpm run check:particles && pnpm run check:accessories && pnpm run check:knot && pnpm run check:custom && tsc --noEmit",
     "preview": "vite preview"
   },
   "keywords": [
@@ -32,15 +55,31 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@types/react": "^19.2.18",
+    "astro": "^7.2.2",
+    "react": "^19.2.8",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
-    "vite-plugin-dts": "^3.8.0"
+    "vite-plugin-dts": "^3.8.0",
+    "vue": "^3.5.41"
   },
   "peerDependencies": {
-    "cuelume": "*"
+    "astro": "*",
+    "cuelume": "*",
+    "react": "*",
+    "vue": "*"
   },
   "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    },
     "cuelume": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     }
   }

@@ -1,0 +1,80 @@
+---
+---
+
+<section id="catalogo" class="doc-section">
+  <h2>Catálogo — 14 personalidades</h2>
+  <p>
+    Cada emoji tiene 24 expresiones repartidas en 4 estados. Probá los controles, o
+    clickeá el nombre de cualquier emoji para copiar su <code>createEmoji()</code>.
+  </p>
+
+  <div class="toolbar-wrapper">
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <span class="toolbar-label">Estado:</span>
+        <button class="btn active" data-state="idle">idle</button>
+        <button class="btn" data-state="near">near</button>
+        <button class="btn" data-state="hover">hover</button>
+        <button class="btn" data-state="click">click</button>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label" id="state-count-label">Estados:</span>
+        <select id="state-select" class="btn" style="padding: 0.3rem 0.6rem;"></select>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Acciones:</span>
+        <button class="btn active" id="btn-synergy">Sinergia Multi-Emoji</button>
+        <button class="btn active" id="btn-sound">Sonido</button>
+        <button class="btn active" id="btn-drag">Arrastrar</button>
+        <button class="btn active" id="btn-wander" title="Visita reacciones al azar en reposo, para sentirse vivo">Deambular</button>
+        <button class="btn" id="btn-gaze">Seguir Ratón</button>
+        <button class="btn" id="btn-spin">Girar 360°</button>
+        <button class="btn" id="btn-bounce">Rebotar</button>
+        <button class="btn" id="btn-flip">Espejo</button>
+        <button class="btn" id="btn-emphasis">Énfasis</button>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Tema:</span>
+        <select id="theme-select" class="btn" style="padding: 0.3rem 0.6rem;">
+          <option value="auto" selected>Auto (Por Estado)</option>
+          <option value="neon">Neón Cyberpunk</option>
+          <option value="pastel">Pastel Suave</option>
+          <option value="dark">Dark Mode</option>
+          <option value="gold">Dorado Glam</option>
+        </select>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Secuencia:</span>
+        <select id="sequence-select" class="btn" style="padding: 0.3rem 0.6rem;">
+          <option value="saludo">Saludo</option>
+          <option value="pensar">Pensar y responder</option>
+          <option value="celebrar">Celebrar</option>
+          <option value="dormirse">Dormirse</option>
+        </select>
+        <select id="sequence-mode" class="btn" style="padding: 0.3rem 0.6rem;">
+          <option value="once">una vez</option>
+          <option value="loop">bucle</option>
+          <option value="ping-pong">ping-pong</option>
+        </select>
+        <button class="btn" id="btn-sequence-play">Reproducir</button>
+        <button class="btn" id="btn-sequence-stop">Detener</button>
+      </div>
+
+      <div class="toolbar-group">
+        <span class="toolbar-label">Tamaño:</span>
+        <button class="size-btn" data-size="xs">XS</button>
+        <button class="size-btn" data-size="sm">SM</button>
+        <button class="size-btn active" data-size="base">Base</button>
+        <button class="size-btn" data-size="lg">LG</button>
+        <button class="size-btn" data-size="xl">XL</button>
+        <button class="size-btn" data-size="2xl">2XL</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" id="emoji-grid"></div>
+</section>
