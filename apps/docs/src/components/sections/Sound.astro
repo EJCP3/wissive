@@ -1,0 +1,22 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="sonido" class="doc-section">
+  <h2>Sonido (opcional)</h2>
+  <p>
+    Integración opcional con <a href="https://cuelume-site.pages.dev/" target="_blank" rel="noopener">Cuelume</a>
+    — <em>peer dependency</em>, nunca obligatoria. Se detecta en tiempo de ejecución
+    (import dinámico); si no está instalada, la librería funciona igual, en silencio,
+    sin errores en consola.
+  </p>
+  <CodeBlock code={`import { createEmoji, setGlobalSound, setGlobalVolume } from 'wissive';
+
+// Por instancia
+const emoji = createEmoji('mochi', { target, sound: true });
+emoji.setSound(false); // silenciar solo esta instancia
+
+// Control global para toda la aplicación
+setGlobalSound(false);   // silencia todos los emojis a la vez
+setGlobalVolume(0.5);    // ajusta el volumen global (0.0 a 1.0)`} />
+</section>

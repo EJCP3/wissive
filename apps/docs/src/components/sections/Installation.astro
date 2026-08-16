@@ -1,0 +1,21 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="instalacion" class="doc-section">
+  <h2>Instalación</h2>
+  <p>Vía pnpm, para usar con un bundler:</p>
+  <CodeBlock code="pnpm add wissive" />
+  <CodeBlock code={`import { createEmoji } from 'wissive';
+
+createEmoji('mochi', { target: document.querySelector('#slot') });`} />
+  <p>O vía CDN, sin instalar nada:</p>
+  <CodeBlock code={`<script src="https://cdn.jsdelivr.net/npm/wissive/dist/wissive.umd.js"></script>
+<div id="slot"></div>
+<script>
+  Wissive.createEmoji('mochi', { target: document.querySelector('#slot') });
+</script>`} />
+  <p style="font-size: 0.82rem;">
+    Micro-librería ligera sin dependencias de runtime obligatorias.
+  </p>
+</section>

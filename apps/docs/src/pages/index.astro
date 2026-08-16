@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Introduction from '../components/sections/Introduction.astro';
+import Installation from '../components/sections/Installation.astro';
+import Catalog from '../components/sections/Catalog.astro';
+import UseCases from '../components/sections/UseCases.astro';
+import CustomEmoji from '../components/sections/CustomEmoji.astro';
+import BasicUsage from '../components/sections/BasicUsage.astro';
+import Options from '../components/sections/Options.astro';
+import States from '../components/sections/States.astro';
+import Sound from '../components/sections/Sound.astro';
+import Accessibility from '../components/sections/Accessibility.astro';
+import Frameworks from '../components/sections/Frameworks.astro';
+import Performance from '../components/sections/Performance.astro';
+import Credits from '../components/sections/Credits.astro';
+---
+
+<Layout>
+  <main class="docs-layout" id="docs">
+    <Sidebar />
+
+    <div class="content">
+      <Introduction />
+      <Installation />
+      <Catalog />
+      <UseCases />
+      <CustomEmoji />
+      <BasicUsage />
+      <Options />
+      <States />
+      <Sound />
+      <Accessibility />
+      <Frameworks />
+      <Performance />
+      <Credits />
+    </div>
+  </main>
+</Layout>
