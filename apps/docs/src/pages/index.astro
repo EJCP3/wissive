@@ -17,23 +17,28 @@ import Credits from '../components/sections/Credits.astro';
 ---
 
 <Layout>
-  <main class="docs-layout" id="docs">
+  <main class="docs-layout" id="app-main">
     <Sidebar />
 
-    <div class="content">
-      <Introduction />
-      <Installation />
-      <Catalog />
-      <UseCases />
-      <CustomEmoji />
-      <BasicUsage />
-      <Options />
-      <States />
-      <Sound />
-      <Accessibility />
-      <Frameworks />
-      <Performance />
-      <Credits />
+    <div class="content" id="docs-view-root">
+      <div id="view-labs" class="tab-view active" role="tabpanel" aria-labelledby="tab-btn-labs">
+        <Catalog />
+        <CustomEmoji />
+      </div>
+
+      <div id="view-docs" class="tab-view" role="tabpanel" aria-labelledby="tab-btn-docs">
+        <Introduction />
+        <Installation />
+        <UseCases />
+        <BasicUsage />
+        <Options />
+        <States />
+        <Sound />
+        <Accessibility />
+        <Frameworks />
+        <Performance />
+        <Credits />
+      </div>
     </div>
   </main>
 </Layout>

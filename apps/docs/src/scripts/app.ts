@@ -8,18 +8,30 @@ import { initCustomizer } from './customizer';
 import { initExamplesAndUseCases } from './examples';
 import { initFrameworkPicker } from './frameworks';
 import { initPerformanceStressTest } from './performance';
+import { initTabs } from './tabs';
+
+let activeObserver: IntersectionObserver | null = null;
 
 export function initSidebarObserver(): void {
-  const links = document.querySelectorAll<HTMLAnchorElement>('#sidebar-nav a');
+  if (activeObserver) {
+    activeObserver.disconnect();
+  }
+
+  const links = document.querySelectorAll<HTMLAnchorElement>('.sidebar-nav-group.active a');
   const linkByHref = new Map([...links].map(a => [a.getAttribute('href'), a]));
-  const observer = new IntersectionObserver(entries => {
+  
+  activeObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       const link = linkByHref.get('#' + entry.target.id);
       if (!link) return;
       link.classList.toggle('active', entry.isIntersecting);
     });
   }, { rootMargin: '-80px 0px -70% 0px' });
-  document.querySelectorAll('.doc-section, .example-card[id]').forEach(sec => observer.observe(sec));
+
+  const activeView = document.querySelector('.tab-view.active');
+  if (activeView) {
+    activeView.querySelectorAll('.doc-section, .example-card[id]').forEach(sec => activeObserver!.observe(sec));
+  }
 }
 
 function initApp(): void {
@@ -31,6 +43,7 @@ function initApp(): void {
   initCopyButtons();
   initSyntaxHighlighting();
   initFrameworkPicker();
+  initTabs();
   initSidebarObserver();
 
   initHeroCarousel();

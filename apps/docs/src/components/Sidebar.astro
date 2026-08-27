@@ -2,13 +2,21 @@
 ---
 
 <aside class="sidebar">
+  <div class="sidebar-tabs-wrapper">
+    <div class="view-tabs" role="tablist" aria-label="Secciones">
+      <button class="view-tab active" id="tab-btn-labs" data-view="labs" role="tab" aria-selected="true" aria-controls="view-labs">Labs</button>
+      <button class="view-tab" id="tab-btn-docs" data-view="docs" role="tab" aria-selected="false" aria-controls="view-docs">Docs</button>
+    </div>
+  </div>
   <div class="sidebar-label">☰ En esta página</div>
-  <nav id="sidebar-nav">
+  <nav id="sidebar-nav-labs" class="sidebar-nav-group active">
+    <a href="#catalogo">Catálogo</a>
+    <a href="#personalizado">Tu propio emoji</a>
+  </nav>
+  <nav id="sidebar-nav-docs" class="sidebar-nav-group">
     <a href="#introduccion">Introducción</a>
     <a href="#instalacion">Instalación</a>
-    <a href="#catalogo">Catálogo</a>
     <a href="#casos-de-uso">Casos de uso</a>
-    <a href="#personalizado">Tu propio emoji</a>
     <a href="#uso-basico">Uso básico</a>
     <a href="#ej-basico" class="sub">Emoji básico</a>
     <a href="#ej-programatico" class="sub">Control programático</a>

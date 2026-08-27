@@ -3,7 +3,6 @@ import '../styles/variables.css';
 import '../styles/main.css';
 import Topnav from '../components/Topnav.astro';
 import Hero from '../components/Hero.astro';
-import MobileToc from '../components/MobileToc.astro';
 
 interface Props {
   title?: string;
@@ -31,7 +30,6 @@ const {
 <body>
   <Topnav />
   <Hero />
-  <MobileToc />
 
   <slot />
 
