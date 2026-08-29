@@ -1,0 +1,82 @@
+---
+import '../styles/variables.css';
+import '../styles/main.css';
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wissive — OG Image</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0a1a;overflow:hidden;display:flex;align-items:center;justify-content:center;width:100vw;height:100vh;">
+
+  <div id="og-card" class="og-card">
+    <!-- Grid de emojis generado por JS -->
+    <div id="og-emoji-grid" class="og-emoji-grid"></div>
+
+    <!-- Título centrado encima de todo -->
+    <h1 class="og-title">wissive<span class="og-dot">.</span></h1>
+  </div>
+
+  <style>
+    .og-card {
+      width: 1200px;
+      height: 630px;
+      background: #121232;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .og-emoji-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(18, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      place-items: center;
+      padding: 1rem;
+      gap: 0;
+    }
+
+    .og-slot {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .og-slot .wissive-wrapper,
+    .og-slot .wissive-emoji {
+      width: 48px !important;
+      height: 48px !important;
+    }
+
+    .og-title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Capuche', 'Plus Jakarta Sans', sans-serif;
+      font-size: 130px;
+      font-weight: 900;
+      color: #00BAFF;
+      margin: 0;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      text-align: center;
+      white-space: nowrap;
+      z-index: 10;
+      text-shadow: 0 0 60px #121232, 0 0 40px #121232, 0 0 80px #121232;
+    }
+
+    .og-dot {
+      color: #ffffff;
+    }
+  </style>
+
+  <script src="../scripts/og-generator.ts"></script>
+</body>
+</html>
