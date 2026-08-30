@@ -94,6 +94,8 @@ export interface FaceParameters {
    * 24: cat-cup-smirk]
    */
   mouthType: number;
+  /** Eyebrows visible toggle (0: hidden, 1: visible) */
+  showBrows: number;
   /** Eyebrow Y offset */
   browY: number;
   /** Eyebrow tilt angle in degrees (+ is angry \ /, - is sad / \) */

@@ -12,6 +12,7 @@ function createDefaultParams(overrides: Partial<FaceParameters> = {}): FaceParam
     mouthWidth: 0.8,
     mouthOpen: 0.0,
     mouthType: 0,
+    showBrows: 0,
     browY: 0,
     browTilt: 0,
     cheek: 0,

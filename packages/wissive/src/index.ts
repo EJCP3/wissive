@@ -1,9 +1,10 @@
-import { InteractionState, EmojiDefinition, FaceParameters } from './emojis/types';
+import { InteractionState, EmojiDefinition, FaceParameters, SilhouetteType } from './emojis/types';
 import { getEmojiDefinition } from './emojis/catalog';
-import { createMultiSpring, MultiSpring } from './core/spring';
+import { createMultiSpring, MultiSpring, TransitionProfile, SpringConfig } from './core/spring';
 import { StateManager } from './core/state';
 import { sharedLoop } from './core/raf';
 import { buildFace } from './render/svg';
+import { getSilhouetteProfile, blendProfiles } from './render/silhouette';
 import { attachEventListeners, supportsHover, isTouchDevice } from './events/listeners';
 import {
   soundEngine,
@@ -88,6 +89,8 @@ export interface WissiveInstance {
   setReducedMotion: (setting: 'auto' | boolean) => void;
   setTheme: (theme: ThemeOption) => void;
   setSize: (size: WissiveSize) => void;
+  setSilhouette: (silhouette: SilhouetteType, duration?: number) => void;
+  setSpringConfig: (config: Partial<SpringConfig> | TransitionProfile) => void;
   triggerParticles: (count?: number) => void;
   playSequence: (steps: SequenceStep[], options?: SequenceOptions) => void;
   stopSequence: () => void;
@@ -203,6 +206,15 @@ export function createEmoji(
     stiffness: motion.stiffness,
     damping: motion.damping,
   });
+
+  // ─── Silhouette Radial Morphing State (Catmull-Rom continuous morph) ──
+  let currentSilhouette: SilhouetteType = definition.silhouette;
+  let currentRadii: number[] = [...getSilhouetteProfile(currentSilhouette)];
+  let targetRadii: number[] = [...currentRadii];
+  let morphFromRadii: number[] = [...currentRadii];
+  let morphStartTime = 0;
+  let morphDuration = 400;
+  let isMorphing = false;
 
   let isNearActive = false;
   let isHoverActive = false;
@@ -342,7 +354,11 @@ export function createEmoji(
       currentColor,
       currentParams,
       currentSize,
-      { flipX: isFlipX, emphasis: isEmphasis },
+      {
+        flipX: isFlipX,
+        emphasis: isEmphasis,
+        radii: currentRadii,
+      },
       idleTime
     );
   };
@@ -405,9 +421,23 @@ export function createEmoji(
   const tick = (dt: number) => {
     idleTime += dt;
     const isMoving = springs.update(dt);
+
+    // Actualización de metamorfosis continua durante la transición
+    if (isMorphing) {
+      const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const elapsed = now - morphStartTime;
+      const progress = Math.min(1, Math.max(0, elapsed / morphDuration));
+      const easeT = 1 - Math.pow(1 - progress, 4);
+      currentRadii = blendProfiles(morphFromRadii, targetRadii, easeT);
+      if (progress >= 1) {
+        isMorphing = false;
+        currentRadii = [...targetRadii];
+      }
+    }
+
     render();
 
-    if (!isMoving && stateManager.getState() !== 'idle') {
+    if (!isMoving && !isMorphing && stateManager.getState() !== 'idle') {
       sharedLoop.remove(tick);
     }
   };
@@ -748,6 +778,28 @@ export function createEmoji(
       particles.resize(currentSize);
       render();
     },
+    setSilhouette(newSilhouette: SilhouetteType, duration = 400) {
+      if (currentSilhouette === newSilhouette && !isMorphing) return;
+      currentSilhouette = newSilhouette;
+      definition.silhouette = newSilhouette;
+      morphFromRadii = [...currentRadii];
+      targetRadii = getSilhouetteProfile(newSilhouette);
+      morphStartTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      morphDuration = isReducedMotionActive() ? 0 : duration;
+
+      if (morphDuration === 0) {
+        currentRadii = [...targetRadii];
+        isMorphing = false;
+      } else {
+        isMorphing = true;
+      }
+
+      sharedLoop.add(tick);
+      render();
+    },
+    setSpringConfig(config: Partial<SpringConfig> | TransitionProfile) {
+      springs.setConfig(config);
+    },
     triggerParticles(count = 8) {
       if (!isReducedMotionActive()) {
         particles.burst(particleEmotion, count);
@@ -783,6 +835,7 @@ export * from './core/spring';
 export * from './core/state';
 export * from './core/raf';
 export * from './render/svg';
+export * from './render/silhouette';
 export * from './core/sound';
 export * from './core/drag';
 export * from './render/particles';

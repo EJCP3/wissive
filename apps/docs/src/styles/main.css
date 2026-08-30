@@ -565,6 +565,10 @@ button, input, select {
   margin-bottom: 0.9rem;
 }
 
+.sidebar:has(#tab-btn-studio.active) .sidebar-label {
+  display: none;
+}
+
 .sidebar-nav-group {
   display: none;
   flex-direction: column;

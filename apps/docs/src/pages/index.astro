@@ -6,6 +6,7 @@ import Installation from '../components/sections/Installation.astro';
 import Catalog from '../components/sections/Catalog.astro';
 import UseCases from '../components/sections/UseCases.astro';
 import CustomEmoji from '../components/sections/CustomEmoji.astro';
+import AnimationStudioSection from '../components/sections/AnimationStudioSection.astro';
 import BasicUsage from '../components/sections/BasicUsage.astro';
 import Options from '../components/sections/Options.astro';
 import States from '../components/sections/States.astro';
@@ -25,6 +26,10 @@ import Credits from '../components/sections/Credits.astro';
       <div id="view-labs" class="tab-view active" role="tabpanel" aria-labelledby="tab-btn-labs">
         <Catalog />
         <CustomEmoji />
+      </div>
+
+      <div id="view-studio" class="tab-view" role="tabpanel" aria-labelledby="tab-btn-studio">
+        <AnimationStudioSection />
       </div>
 
       <div id="view-docs" class="tab-view" role="tabpanel" aria-labelledby="tab-btn-docs">

@@ -183,8 +183,12 @@ function getProceduralStateParams(base: FaceParameters, state: InteractionState)
 }
 
 export class StateManager {
-  private currentState: InteractionState = 'idle';
+  private currentState: InteractionState;
   private lastIndices: Record<string, number> = {};
+
+  constructor(initialState: InteractionState = 'idle') {
+    this.currentState = initialState;
+  }
 
   public getState(): InteractionState {
     return this.currentState;
@@ -285,3 +289,8 @@ export class StateManager {
     return pool[nextIdx];
   }
 }
+
+export function createStateManager(initialState: InteractionState = 'idle'): StateManager {
+  return new StateManager(initialState);
+}
+

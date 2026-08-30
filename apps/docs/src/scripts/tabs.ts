@@ -1,8 +1,9 @@
 import { initSidebarObserver } from './app';
 
-export type TabType = 'docs' | 'labs';
+export type TabType = 'docs' | 'labs' | 'studio';
 
 const LABS_HASHES = new Set(['#catalogo', '#personalizado', '#labs']);
+const STUDIO_HASHES = new Set(['#studio', '#estudio', '#estudio-animacion']);
 const DOCS_HASHES = new Set([
   '#docs',
   '#introduccion',
@@ -39,22 +40,21 @@ export function switchTab(tab: TabType, shouldScroll = false): void {
   // Update visible view container
   const docsView = document.getElementById('view-docs');
   const labsView = document.getElementById('view-labs');
-  if (docsView && labsView) {
-    if (tab === 'docs') {
-      docsView.classList.add('active');
-      labsView.classList.remove('active');
-    } else {
-      labsView.classList.add('active');
-      docsView.classList.remove('active');
-    }
-  }
+  const studioView = document.getElementById('view-studio');
 
-  // Update sidebar navigation
+  if (docsView) docsView.classList.toggle('active', tab === 'docs');
+  if (labsView) labsView.classList.toggle('active', tab === 'labs');
+  if (studioView) studioView.classList.toggle('active', tab === 'studio');
+
+  // Update sidebar navigation and label
   const sidebarDocs = document.getElementById('sidebar-nav-docs');
   const sidebarLabs = document.getElementById('sidebar-nav-labs');
-  if (sidebarDocs && sidebarLabs) {
-    sidebarDocs.classList.toggle('active', tab === 'docs');
-    sidebarLabs.classList.toggle('active', tab === 'labs');
+  const sidebarLabel = document.querySelector<HTMLElement>('.sidebar-label');
+
+  if (sidebarDocs) sidebarDocs.classList.toggle('active', tab === 'docs');
+  if (sidebarLabs) sidebarLabs.classList.toggle('active', tab === 'labs');
+  if (sidebarLabel) {
+    sidebarLabel.style.display = tab === 'studio' ? 'none' : '';
   }
 
   // Re-run observer so links inside the active view are observed
@@ -86,10 +86,12 @@ export function initTabs(): void {
     });
   });
 
-  // Determine initial tab: ALWAYS default to Labs unless a specific docs hash is present in URL
+  // Determine initial tab based on hash
   const hash = window.location.hash.toLowerCase();
   if (DOCS_HASHES.has(hash)) {
     switchTab('docs');
+  } else if (STUDIO_HASHES.has(hash)) {
+    switchTab('studio');
   } else {
     switchTab('labs');
   }
@@ -99,8 +101,11 @@ export function initTabs(): void {
     const currentHash = window.location.hash.toLowerCase();
     if (DOCS_HASHES.has(currentHash)) {
       switchTab('docs');
+    } else if (STUDIO_HASHES.has(currentHash)) {
+      switchTab('studio');
     } else if (LABS_HASHES.has(currentHash)) {
       switchTab('labs');
     }
   });
 }
+

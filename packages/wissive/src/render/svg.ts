@@ -1,5 +1,6 @@
 import type { FaceParameters, SilhouetteType } from '../emojis/types';
 import { spiralPoints } from './spiral.ts';
+import { generateSilhouettePath } from './silhouette.ts';
 
 export function getSilhouettePath(silhouette: SilhouetteType): string {
   switch (silhouette) {
@@ -69,7 +70,8 @@ export function getSilhouettePath(silhouette: SilhouetteType): string {
       return 'M 50 12.5 C 60 9.17 69.17 15.83 71.67 21.67 C 79.17 24.17 83.33 32.5 80.83 40 C 85.83 47.5 83.33 57.5 78.33 61.67 C 76.67 70.83 68.33 76.67 60 74.17 C 53.33 80 42.5 80 35.83 74.17 C 27.5 76.67 20 70 18.33 61.67 C 13.33 56.67 11.67 47.5 16.67 40 C 14.17 32.5 20 24.17 27.5 21.67 C 30.83 15 40 9.17 50 12.5 Z';
 
     case 'wide-oval':
-      return 'M 50 20.83 C 73.33 20.83 87.5 31.67 87.5 47.5 C 87.5 64.17 73.33 75.83 50 75.83 C 26.67 75.83 12.5 64.17 12.5 47.5 C 12.5 31.67 26.67 20.83 50 20.83 Z';
+      // Dozy / tired — silueta relajada con base pesada y caída
+      return 'M 50 25 C 74 25 88 35 88 56 C 88 74 72 82 50 82 C 28 82 12 74 12 56 C 12 35 26 25 50 25 Z';
 
     case 'soft-round':
       return 'M 50 15 C 73.33 15 85 26.67 85 48.33 C 85 70 73.33 80 50 80 C 26.67 80 15 70 15 48.33 C 15 26.67 26.67 15 50 15 Z';
@@ -88,6 +90,7 @@ export function getSilhouettePath(silhouette: SilhouetteType): string {
 export interface RenderOptions {
   flipX?: boolean;
   emphasis?: boolean;
+  radii?: number[];
 }
 
 /**
@@ -124,15 +127,22 @@ export function buildFace(
   const strokeColor = '#2C2C2A';
   const cheekColor = '#F0997B';
   const STROKE_W = 3.5;
-  const silhouettePath = getSilhouettePath(silhouette);
-  // Una silueta puede tener varias subformas (cuerpo + orejas). Se dibuja cada una
-  // como <path> propio: así el solapamiento une en vez de recortar agujeros.
-  const silhouetteParts = silhouettePath
-    .split(/(?=M )/)
-    .map((d) => d.trim())
-    .filter(Boolean)
-    .map((d) => `<path d="${d}" fill="${baseColor}" />`)
-    .join('');
+
+  let silhouetteParts = '';
+  if (renderOptions.radii && renderOptions.radii.length > 0) {
+    // Estado de metamorfosis activa: trazado continuo fluido Catmull-Rom de 64 muestras
+    const morphPath = generateSilhouettePath(renderOptions.radii);
+    silhouetteParts = `<path class="wissive-silhouette-path" d="${morphPath}" fill="${baseColor}" />`;
+  } else {
+    // Estado estático oficial: SVG exacto de alta fidelidad con todas sus subpartes (orejas, brazos, curvas)
+    const silhouettePath = getSilhouettePath(silhouette);
+    silhouetteParts = silhouettePath
+      .split(/(?=M )/)
+      .map((d) => d.trim())
+      .filter(Boolean)
+      .map((d) => `<path class="wissive-silhouette-path" d="${d}" fill="${baseColor}" />`)
+      .join('');
+  }
 
   const { flipX = false, emphasis = false } = renderOptions;
 
@@ -179,84 +189,96 @@ export function buildFace(
 
     switch (eyeType) {
       case 1:
-        // Arco hacia arriba ^ ^
-        return `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y + 1.67 * eyeScale} Q ${x} ${y - 5.83 * eyeScale} ${x + 5.83 * eyeScale} ${y + 1.67 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
+        // Arco hacia arriba — ojos felices (^ ^)
+        return `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y + 2.5 * eyeScale} Q ${x} ${y - 5.83 * eyeScale} ${x + 5.83 * eyeScale} ${y + 2.5 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 2:
-        // Cuña > <
+        // Kawaii cruzado (> <)
         return isRight
-          ? `<g ${eyeTransform}><path d="M ${x + 3.33 * eyeScale} ${y - 5 * eyeScale} L ${x - 3.33 * eyeScale} ${y} L ${x + 3.33 * eyeScale} ${y + 5 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`
-          : `<g ${eyeTransform}><path d="M ${x - 3.33 * eyeScale} ${y - 5 * eyeScale} L ${x + 3.33 * eyeScale} ${y} L ${x - 3.33 * eyeScale} ${y + 5 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
+          ? `<g ${eyeTransform}><path d="M ${x - 5 * eyeScale} ${y - 5 * eyeScale} L ${x + 4.17 * eyeScale} ${y} L ${x - 5 * eyeScale} ${y + 5 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`
+          : `<g ${eyeTransform}><path d="M ${x + 5 * eyeScale} ${y - 5 * eyeScale} L ${x - 4.17 * eyeScale} ${y} L ${x + 5 * eyeScale} ${y + 5 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
 
       case 3:
+        // Diagonal enojado (\ /)
         return isRight
-          ? `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y + 3 * eyeScale}" x2="${x + 5 * eyeScale}" y2="${y - 3 * eyeScale}" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" /></g>`
-          : `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y - 3 * eyeScale}" x2="${x + 5 * eyeScale}" y2="${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" /></g>`;
+          ? `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y - 4.17 * eyeScale} L ${x + 5 * eyeScale} ${y + 4.17 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`
+          : `<g ${eyeTransform}><path d="M ${x + 5.83 * eyeScale} ${y - 4.17 * eyeScale} L ${x - 5 * eyeScale} ${y + 4.17 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 4:
+        // Diagonal triste (/ \)
         return isRight
-          ? `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y - 3 * eyeScale}" x2="${x + 5 * eyeScale}" y2="${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" /></g>`
-          : `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y + 3 * eyeScale}" x2="${x + 5 * eyeScale}" y2="${y - 3 * eyeScale}" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" /></g>`;
+          ? `<g ${eyeTransform}><path d="M ${x - 5 * eyeScale} ${y + 4.17 * eyeScale} L ${x + 5.83 * eyeScale} ${y - 4.17 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`
+          : `<g ${eyeTransform}><path d="M ${x + 5 * eyeScale} ${y + 4.17 * eyeScale} L ${x - 5.83 * eyeScale} ${y - 4.17 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 5:
-        // Ojo con pupila (blanco sin contorno + pupila baja)
+        // Pupila con punto blanco arriba a la izquierda
         return `<g ${eyeTransform}>
-          <ellipse cx="${x}" cy="${y}" rx="${5 * eyeScale}" ry="${5.83 * eyeScale}" fill="#ffffff" />
-          <circle cx="${x}" cy="${y + 0.83 * eyeScale}" r="${2.17 * eyeScale}" fill="${strokeColor}" />
+          <ellipse cx="${x}" cy="${y}" rx="${3.33 * effectiveScale}" ry="${3.33 * effectiveScale}" fill="${strokeColor}" />
+          <circle cx="${x - 1.25 * eyeScale}" cy="${y - 1.25 * eyeScale}" r="${1.25 * eyeScale}" fill="#FFFFFF" />
         </g>`;
 
-      case 6:
-        return `<g ${eyeTransform} fill="#E3536C"><path d="M ${x} ${y + 5 * eyeScale} C ${x - 8 * eyeScale} ${y - 2 * eyeScale} ${x - 5 * eyeScale} ${y - 7 * eyeScale} ${x} ${y - 3 * eyeScale} C ${x + 5 * eyeScale} ${y - 7 * eyeScale} ${x + 8 * eyeScale} ${y - 2 * eyeScale} ${x} ${y + 5 * eyeScale} Z" /></g>`;
+      case 6: {
+        // Corazones en los ojos
+        const hr = 5.5 * eyeScale;
+        return `<g ${eyeTransform}><path d="M ${x} ${y + hr * 0.7} C ${x - hr * 1.1} ${y - hr * 0.1} ${x - hr * 0.9} ${y - hr * 0.9} ${x} ${y - hr * 0.35} C ${x + hr * 0.9} ${y - hr * 0.9} ${x + hr * 1.1} ${y - hr * 0.1} ${x} ${y + hr * 0.7} Z" fill="#E84855" /></g>`;
+      }
 
-      case 7:
-        return `<g ${eyeTransform} stroke="${strokeColor}" stroke-width="3.2">
-          <line x1="${x - 4.5 * eyeScale}" y1="${y - 4.5 * eyeScale}" x2="${x + 4.5 * eyeScale}" y2="${y + 4.5 * eyeScale}" stroke-linecap="round" />
-          <line x1="${x - 4.5 * eyeScale}" y1="${y + 4.5 * eyeScale}" x2="${x + 4.5 * eyeScale}" y2="${y - 4.5 * eyeScale}" stroke-linecap="round" />
+      case 7: {
+        // Ojo X cruzado
+        const xr = 4.2 * eyeScale;
+        return `<g ${eyeTransform}>
+          <line x1="${x - xr}" y1="${y - xr}" x2="${x + xr}" y2="${y + xr}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
+          <line x1="${x + xr}" y1="${y - xr}" x2="${x - xr}" y2="${y + xr}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
         </g>`;
+      }
 
-      case 8:
-        return `<g ${eyeTransform} stroke="${strokeColor}" stroke-width="2.8" stroke-linecap="round">
-          <line x1="${x - 5 * eyeScale}" y1="${y - 2}" x2="${x + 5 * eyeScale}" y2="${y - 2}" />
-          <line x1="${x - 5 * eyeScale}" y1="${y + 2}" x2="${x + 5 * eyeScale}" y2="${y + 2}" />
+      case 8: {
+        // Doble línea = = (ojos cansados / mareados)
+        const lw = 5 * eyeScale;
+        return `<g ${eyeTransform}>
+          <line x1="${x - lw}" y1="${y - 2.2 * eyeScale}" x2="${x + lw}" y2="${y - 2.2 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W * 0.8}" stroke-linecap="round" />
+          <line x1="${x - lw}" y1="${y + 2.2 * eyeScale}" x2="${x + lw}" y2="${y + 2.2 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W * 0.8}" stroke-linecap="round" />
         </g>`;
+      }
 
       case 9:
-        if (isRight) return '';
-        return `<g transform="translate(0, 0)">
-          <path d="M ${leftProj.projX - 12} ${y - 2} L ${rightProj.projX + 12} ${y - 2}" stroke="${strokeColor}" stroke-width="2.8" />
-          <rect x="${leftProj.projX - 9}" y="${y - 6}" width="16" height="12" rx="3" fill="${strokeColor}" />
-          <rect x="${rightProj.projX - 7}" y="${y - 6}" width="16" height="12" rx="3" fill="${strokeColor}" />
+        // Gafas / Lentes
+        return `<g ${eyeTransform}>
+          <circle cx="${x}" cy="${y}" r="${5.8 * eyeScale}" fill="none" stroke="${strokeColor}" stroke-width="2.6" />
+          ${isRight ? `<line x1="${x - 5.8 * eyeScale}" y1="${y}" x2="${x - 10 * eyeScale}" y2="${y}" stroke="${strokeColor}" stroke-width="2.6" stroke-linecap="round" />` : ''}
         </g>`;
 
       case 10:
-        if (!isRight) {
-          return `<g ${eyeTransform}><ellipse cx="${x}" cy="${y}" rx="${6 * eyeScale}" ry="${8 * eyeScale}" fill="${strokeColor}" /></g>`;
+        // Guiño: un ojo arco cerrado, el otro cápsula normal
+        if (isRight) {
+          return `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y + 1 * eyeScale} Q ${x} ${y - 5 * eyeScale} ${x + 5.83 * eyeScale} ${y + 1 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
         }
-        return `<g ${eyeTransform}><circle cx="${x}" cy="${y}" r="${3.2 * eyeScale}" fill="${strokeColor}" /></g>`;
+        return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="${(2.83 * effectiveScale).toFixed(2)}" ry="${Math.max(0.5, 2.83 * effectiveScale * Math.max(0.05, params.eyeOpen)).toFixed(2)}" fill="${strokeColor}" />`;
 
       case 11:
-        if (!isRight) {
-          return `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y}" x2="${x + 5 * eyeScale}" y2="${y}" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" /></g>`;
+        // Ojo asimétrico: izquierdo punto, derecho raya
+        if (isRight) {
+          return `<g ${eyeTransform}><line x1="${x - 5 * eyeScale}" y1="${y}" x2="${x + 5 * eyeScale}" y2="${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" /></g>`;
         }
-        return `<g ${eyeTransform}><circle cx="${x}" cy="${y}" r="${4.2 * eyeScale}" fill="${strokeColor}" /></g>`;
+        return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="${(2.83 * effectiveScale).toFixed(2)}" ry="${(2.83 * effectiveScale).toFixed(2)}" fill="${strokeColor}" />`;
 
       case 12:
-        return `<g ${eyeTransform}>
-          <ellipse cx="${x}" cy="${y}" rx="${3 * eyeScale}" ry="${6 * eyeScale}" fill="${strokeColor}" />
-        </g>`;
+        // Óvalo vertical alargado (sorpresa / susto)
+        return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="${(2.2 * effectiveScale).toFixed(2)}" ry="${(5.5 * effectiveScale).toFixed(2)}" fill="${strokeColor}" />`;
 
       case 13:
-        return `<g ${eyeTransform}><circle cx="${x}" cy="${y}" r="${6.5 * eyeScale}" fill="${strokeColor}" /></g>`;
+        // Círculo grande abierto (asombro O O)
+        return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(4.5 * effectiveScale).toFixed(2)}" fill="${strokeColor}" />`;
 
       case 14:
         // Arco hacia abajo — ojos cerrados serenos (Nima)
         return `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y - 1.67 * eyeScale} Q ${x} ${y + 5.83 * eyeScale} ${x + 5.83 * eyeScale} ${y - 1.67 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 15:
-        // Párpado caído (Dozy, Wilt)
+        // Párpado caído y cansado (Dozy, cansancio) — trazo caído hacia el exterior
         return isRight
-          ? `<g ${eyeTransform}><path d="M ${x + 6.67 * eyeScale} ${y + 2.5 * eyeScale} Q ${x} ${y - 5 * eyeScale} ${x - 6.67 * eyeScale} ${y - 0.83 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`
-          : `<g ${eyeTransform}><path d="M ${x - 6.67 * eyeScale} ${y + 2.5 * eyeScale} Q ${x} ${y - 5 * eyeScale} ${x + 6.67 * eyeScale} ${y - 0.83 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
+          ? `<g ${eyeTransform}><path d="M ${x - 5.5 * eyeScale} ${y - 1.5 * eyeScale} Q ${x + 1 * eyeScale} ${y - 3 * eyeScale} ${x + 6 * eyeScale} ${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`
+          : `<g ${eyeTransform}><path d="M ${x + 5.5 * eyeScale} ${y - 1.5 * eyeScale} Q ${x - 1 * eyeScale} ${y - 3 * eyeScale} ${x - 6 * eyeScale} ${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 16:
         // Raya vertical (Lumo) — la lágrima la aporta el sistema animado `tears`
@@ -298,83 +320,87 @@ export function buildFace(
       case 21: {
         // Estrella — asombro/excitación tipo starstruck
         const r = 6 * eyeScale;
-        const k = r * 0.22; // qué tan "pinchado" queda el centro entre puntas
-        const d = `M ${x} ${y - r} Q ${x + k} ${y - k} ${x + r} ${y} Q ${x + k} ${y + k} ${x} ${y + r} Q ${x - k} ${y + k} ${x - r} ${y} Q ${x - k} ${y - k} ${x} ${y - r} Z`;
-        return `<g ${eyeTransform}><path d="${d}" fill="${strokeColor}" /></g>`;
+        const inner = r * 0.45;
+        const pts = [
+          [x, y - r],
+          [x + inner * 0.59, y - inner * 0.81],
+          [x + r * 0.95, y - r * 0.31],
+          [x + inner * 0.95, y + inner * 0.31],
+          [x + r * 0.59, y + r * 0.81],
+          [x, y + inner],
+          [x - r * 0.59, y + r * 0.81],
+          [x - inner * 0.95, y + inner * 0.31],
+          [x - r * 0.95, y - r * 0.31],
+          [x - inner * 0.59, y - inner * 0.81],
+        ];
+        const pathData = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(' ') + ' Z';
+        return `<g ${eyeTransform}><path d="${pathData}" fill="${strokeColor}" /></g>`;
       }
 
       case 22:
-        // Reojo — pupila corrida al mismo lado en ambos ojos (desconfianza)
-        return `<g ${eyeTransform}>
-          <ellipse cx="${x}" cy="${y}" rx="${5.5 * eyeScale}" ry="${3.3 * eyeScale}" fill="#ffffff" stroke="${strokeColor}" stroke-width="1.4" />
-          <circle cx="${x - 2.2 * eyeScale}" cy="${y}" r="${1.8 * eyeScale}" fill="${strokeColor}" />
-        </g>`;
+        // De reojo / desconfiado (¬ ¬)
+        return isRight
+          ? `<g ${eyeTransform}><path d="M ${x - 5 * eyeScale} ${y - 3 * eyeScale} L ${x + 4 * eyeScale} ${y - 3 * eyeScale} L ${x + 4 * eyeScale} ${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`
+          : `<g ${eyeTransform}><path d="M ${x + 5 * eyeScale} ${y - 3 * eyeScale} L ${x - 4 * eyeScale} ${y - 3 * eyeScale} L ${x - 4 * eyeScale} ${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
 
       case 23:
-        // Guiño de un solo ojo — a diferencia de 3/4 (que espejan la misma
-        // diagonal en los dos ojos), acá uno se cierra y el otro queda normal
-        return isRight
-          ? `<g ${eyeTransform}><ellipse cx="${x}" cy="${y}" rx="${2.83 * eyeScale}" ry="${Math.max(0.5, 2.83 * eyeScale * Math.max(0.05, params.eyeOpen))}" fill="${strokeColor}" /></g>`
-          : `<g ${eyeTransform}><path d="M ${x - 5 * eyeScale} ${y} Q ${x} ${y + 4 * eyeScale} ${x + 5 * eyeScale} ${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
+        // Guiño invertido (ojo derecho guiño, izquierdo abierto)
+        if (!isRight) {
+          return `<g ${eyeTransform}><path d="M ${x - 5.83 * eyeScale} ${y + 1 * eyeScale} Q ${x} ${y - 5 * eyeScale} ${x + 5.83 * eyeScale} ${y + 1 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
+        }
+        return `<ellipse cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" rx="${(2.83 * effectiveScale).toFixed(2)}" ry="${Math.max(0.5, 2.83 * effectiveScale * Math.max(0.05, params.eyeOpen)).toFixed(2)}" fill="${strokeColor}" />`;
 
-      case 24: {
-        // Ojo grande estilo anime, con brillo — óvalo relleno + punto blanco
-        const rx = 4.2 * eyeScale, ry = 5.8 * eyeScale;
+      case 24:
+        // Anime brillante (dos brillos blancos en la pupila)
         return `<g ${eyeTransform}>
-          <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${strokeColor}" />
-          <circle cx="${x - rx * 0.35}" cy="${y - ry * 0.4}" r="${1.3 * eyeScale}" fill="#ffffff" />
+          <ellipse cx="${x}" cy="${y}" rx="${4.2 * effectiveScale}" ry="${4.8 * effectiveScale}" fill="${strokeColor}" />
+          <circle cx="${x - 1.5 * eyeScale}" cy="${y - 1.8 * eyeScale}" r="${1.6 * eyeScale}" fill="#FFFFFF" />
+          <circle cx="${x + 1.5 * eyeScale}" cy="${y + 1.5 * eyeScale}" r="${0.9 * eyeScale}" fill="#FFFFFF" />
         </g>`;
-      }
 
       case 25:
-        // Entrecerrado con pestaña — mirada relajada
+        // Pestaña relajada (arco sereno con pequeña pestaña lateral)
         return isRight
           ? `<g ${eyeTransform}>
-              <path d="M ${x - 5 * eyeScale} ${y} Q ${x} ${y + 2 * eyeScale} ${x + 5 * eyeScale} ${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
-              <line x1="${x + 5 * eyeScale}" y1="${y - 0.5 * eyeScale}" x2="${x + 7 * eyeScale}" y2="${y - 2.5 * eyeScale}" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" />
+              <path d="M ${x - 5.5 * eyeScale} ${y - 1 * eyeScale} Q ${x} ${y + 5.5 * eyeScale} ${x + 5.5 * eyeScale} ${y - 1 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
+              <line x1="${x + 4.5 * eyeScale}" y1="${y}" x2="${x + 7.5 * eyeScale}" y2="${y - 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W * 0.75}" stroke-linecap="round" />
             </g>`
           : `<g ${eyeTransform}>
-              <path d="M ${x - 5 * eyeScale} ${y} Q ${x} ${y + 2 * eyeScale} ${x + 5 * eyeScale} ${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
-              <line x1="${x - 5 * eyeScale}" y1="${y - 0.5 * eyeScale}" x2="${x - 7 * eyeScale}" y2="${y - 2.5 * eyeScale}" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" />
+              <path d="M ${x - 5.5 * eyeScale} ${y - 1 * eyeScale} Q ${x} ${y + 5.5 * eyeScale} ${x + 5.5 * eyeScale} ${y - 1 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
+              <line x1="${x - 4.5 * eyeScale}" y1="${y}" x2="${x - 7.5 * eyeScale}" y2="${y - 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W * 0.75}" stroke-linecap="round" />
             </g>`;
 
       case 26:
-        // Saltón — aro hueco con pupila corrida a una esquina (googly eyes)
+        // Ojos saltones (círculos blancos grandes con pupila negra)
         return `<g ${eyeTransform}>
-          <circle cx="${x}" cy="${y}" r="${5 * eyeScale}" fill="none" stroke="${strokeColor}" stroke-width="2.2" />
-          <circle cx="${x + 1.6 * eyeScale}" cy="${y + 1.6 * eyeScale}" r="${1.7 * eyeScale}" fill="${strokeColor}" />
+          <circle cx="${x}" cy="${y}" r="${5.8 * effectiveScale}" fill="#FFFFFF" stroke="${strokeColor}" stroke-width="2.2" />
+          <circle cx="${x + (params.gazeX ? params.gazeX * 0.15 : 0)}" cy="${y + (params.gazeY ? params.gazeY * 0.15 : 0)}" r="${2.5 * effectiveScale}" fill="${strokeColor}" />
         </g>`;
 
-      case 27: {
-        // Cascada ⊓⊓ — ojos "desbordado llorando" de anime/manga
-        const w = 4 * eyeScale, h = 8 * eyeScale;
-        return `<g ${eyeTransform}><path d="M ${x - w} ${y + h} L ${x - w} ${y - h} L ${x + w} ${y - h} L ${x + w} ${y + h}" stroke="${strokeColor}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
-      }
+      case 27:
+        // Ojos cascada de lágrimas (línea arqueada con torrente)
+        return `<g ${eyeTransform}><path d="M ${x - 6 * eyeScale} ${y} Q ${x} ${y - 5 * eyeScale} ${x + 6 * eyeScale} ${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" /></g>`;
 
       case 28:
-        // Mirada plana — óvalo fijo, no reacciona a eyeOpen (a diferencia del
-        // 0 default), "no me importa nada" permanente
-        return `<g ${eyeTransform}><ellipse cx="${x}" cy="${y}" rx="${4.5 * eyeScale}" ry="${3 * eyeScale}" fill="${strokeColor}" /></g>`;
+        // Mirada plana fija / inexpresiva (— —)
+        return `<g ${eyeTransform}><line x1="${x - 5.5 * eyeScale}" y1="${y}" x2="${x + 5.5 * eyeScale}" y2="${y}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" /></g>`;
 
       case 29:
-        // Ceja preocupada — arco hacia arriba + pupila chica debajo
+        // Ceja preocupada arqueada con ojito
         return `<g ${eyeTransform}>
-          <path d="M ${x - 4 * eyeScale} ${y - 3 * eyeScale} Q ${x} ${y - 6 * eyeScale} ${x + 4 * eyeScale} ${y - 2.5 * eyeScale}" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" fill="none" />
-          <circle cx="${x}" cy="${y + 1.5 * eyeScale}" r="${1.6 * eyeScale}" fill="${strokeColor}" />
+          <ellipse cx="${x}" cy="${y + 1 * eyeScale}" rx="${2.8 * effectiveScale}" ry="${2.8 * effectiveScale}" fill="${strokeColor}" />
+          <path d="M ${x - 4 * eyeScale} ${y - 4 * eyeScale} Q ${x} ${y - 7 * eyeScale} ${x + 4 * eyeScale} ${y - 5 * eyeScale}" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" fill="none" />
         </g>`;
 
       case 30:
-        // Ceja enojada en zigzag — más dramática que la diagonal simple (17)
-        return isRight
-          ? `<g ${eyeTransform}><path d="M ${x + 6 * eyeScale} ${y - 6 * eyeScale} L ${x + 2 * eyeScale} ${y - 3 * eyeScale} L ${x + 5 * eyeScale} ${y - 1 * eyeScale} L ${x - 3 * eyeScale} ${y + 2 * eyeScale}" stroke="${strokeColor}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`
-          : `<g ${eyeTransform}><path d="M ${x - 6 * eyeScale} ${y - 6 * eyeScale} L ${x - 2 * eyeScale} ${y - 3 * eyeScale} L ${x - 5 * eyeScale} ${y - 1 * eyeScale} L ${x + 3 * eyeScale} ${y + 2 * eyeScale}" stroke="${strokeColor}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
+        // Ojos en zigzag (shock / electrocutado)
+        return `<g ${eyeTransform}><path d="M ${x - 5 * eyeScale} ${y - 3 * eyeScale} L ${x - 1.5 * eyeScale} ${y + 3 * eyeScale} L ${x + 1.5 * eyeScale} ${y - 3 * eyeScale} L ${x + 5 * eyeScale} ${y + 3 * eyeScale}" stroke="${strokeColor}" stroke-width="${STROKE_W * 0.8}" stroke-linecap="round" stroke-linejoin="round" fill="none" /></g>`;
 
       case 31:
-        // Aro con pupila chica centrada — mirada contenta, distinto del 20
-        // (aro sin nada adentro) y del 26 (pupila grande corrida a un lado)
+        // Aro con pupila centrada flotante
         return `<g ${eyeTransform}>
-          <circle cx="${x}" cy="${y}" r="${4 * eyeScale}" fill="none" stroke="${strokeColor}" stroke-width="2" />
-          <circle cx="${x}" cy="${y}" r="${1.3 * eyeScale}" fill="${strokeColor}" />
+          <circle cx="${x}" cy="${y}" r="${4.8 * effectiveScale}" fill="none" stroke="${strokeColor}" stroke-width="2.2" />
+          <circle cx="${x}" cy="${y}" r="${1.8 * effectiveScale}" fill="${strokeColor}" />
         </g>`;
 
       case 0:
@@ -439,72 +465,81 @@ export function buildFace(
 
       tearsSvg = `
         <g opacity="${opacity.toFixed(2)}">
-          <g transform="translate(0, ${dripY.toFixed(2)}) scale(${scaleY.toFixed(2)})">
-            <!-- Lágrima redondita ojo izquierdo -->
-            <path d="M ${lx} ${(lyNum - 2.5).toFixed(2)} C ${(lxNum + 2.2).toFixed(2)} ${(lyNum - 0.5).toFixed(2)} ${(lxNum + 2.2).toFixed(2)} ${(lyNum + 2.2).toFixed(2)} ${lx} ${(lyNum + 3.2).toFixed(2)} C ${(lxNum - 2.2).toFixed(2)} ${(lyNum + 2.2).toFixed(2)} ${(lxNum - 2.2).toFixed(2)} ${(lyNum - 0.5).toFixed(2)} ${lx} ${(lyNum - 2.5).toFixed(2)} Z" fill="#ffffff" />
-            <!-- Lágrima redondita ojo derecho -->
-            <path d="M ${rx} ${(lyNum - 2.5).toFixed(2)} C ${(rxNum + 2.2).toFixed(2)} ${(lyNum - 0.5).toFixed(2)} ${(rxNum + 2.2).toFixed(2)} ${(lyNum + 2.2).toFixed(2)} ${rx} ${(lyNum + 3.2).toFixed(2)} C ${(rxNum - 2.2).toFixed(2)} ${(lyNum + 2.2).toFixed(2)} ${(rxNum - 2.2).toFixed(2)} ${(lyNum - 0.5).toFixed(2)} ${rx} ${(lyNum - 2.5).toFixed(2)} Z" fill="#ffffff" />
+          <g class="wissive-anim-tear" style="transform-origin: ${lxNum}px ${lyNum}px;">
+            <path d="M ${lxNum} ${(lyNum + dripY - 2.5).toFixed(2)} C ${(lxNum - 2).toFixed(2)} ${(lyNum + dripY).toFixed(2)} ${(lxNum - 2.5).toFixed(2)} ${(lyNum + dripY + 2.5).toFixed(2)} ${lxNum} ${(lyNum + dripY + 3.2).toFixed(2)} C ${(lxNum + 2.5).toFixed(2)} ${(lyNum + dripY + 2.5).toFixed(2)} ${(lxNum + 2).toFixed(2)} ${(lyNum + dripY).toFixed(2)} ${lxNum} ${(lyNum + dripY - 2.5).toFixed(2)} Z" fill="#7FA6D9" transform="scale(1, ${scaleY.toFixed(2)})" />
+          </g>
+          <g class="wissive-anim-tear" style="transform-origin: ${rxNum}px ${lyNum}px; animation-delay: -0.9s;">
+            <path d="M ${rxNum} ${(lyNum + dripY - 2.5).toFixed(2)} C ${(rxNum - 2).toFixed(2)} ${(lyNum + dripY).toFixed(2)} ${(rxNum - 2.5).toFixed(2)} ${(lyNum + dripY + 2.5).toFixed(2)} ${rxNum} ${(lyNum + dripY + 3.2).toFixed(2)} C ${(rxNum + 2.5).toFixed(2)} ${(lyNum + dripY + 2.5).toFixed(2)} ${(rxNum + 2).toFixed(2)} ${(lyNum + dripY).toFixed(2)} ${rxNum} ${(lyNum + dripY - 2.5).toFixed(2)} Z" fill="#7FA6D9" transform="scale(1, ${scaleY.toFixed(2)})" />
           </g>
         </g>
       `;
     }
   }
 
-  let accessoriesSvg = '';
-  if (params.zzz) {
-    const cycleTime = currentTime * 0.75;
-    const zCount = 3;
+  // --- CEJAS ---
+  let browsSvg = '';
+  const isBrowsActive = params.showBrows !== undefined
+    ? params.showBrows > 0.5
+    : params.browY !== 0 || params.browTilt !== 0;
 
-    accessoriesSvg += `<g stroke="${strokeColor}" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+  if (isBrowsActive) {
+    const browBaseY = 32 + (params.browY ?? 0);
+    const browLeftX = leftProj.projX;
+    const browRightX = rightProj.projX;
+    const browHalfWidth = 6 * eyeScale;
+    const leftAngle = params.browTilt ?? 0;
+    const rightAngle = -leftAngle;
 
-    for (let i = 0; i < zCount; i++) {
-      const progress = ((cycleTime + (i / zCount)) % 1);
-      const x = 68 + progress * 20 + Math.sin(progress * Math.PI * 2) * 2;
-      const y = 30 - progress * 26;
-      const scale = 0.5 + Math.sin(progress * Math.PI) * 0.65;
-      const opacity = Math.sin(progress * Math.PI) * 0.95;
-
-      const strokeW = (1.8 + scale * 0.7).toFixed(2);
-      const zScale = scale.toFixed(2);
-
-      if (opacity > 0.01) {
-        accessoriesSvg += `
-          <g transform="translate(${x.toFixed(2)}, ${y.toFixed(2)}) scale(${zScale}) translate(-72, -31)" opacity="${opacity.toFixed(2)}">
-            <path d="M 68 28 L 76 28 L 68 34 L 76 34" stroke-width="${strokeW}" />
-          </g>
-        `;
-      }
-    }
-    accessoriesSvg += `</g>`;
+    browsSvg = `
+      <g>
+        <line
+          x1="${browLeftX - browHalfWidth}"
+          y1="${browBaseY}"
+          x2="${browLeftX + browHalfWidth}"
+          y2="${browBaseY}"
+          stroke="${strokeColor}"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          transform="rotate(${leftAngle}, ${browLeftX}, ${browBaseY})"
+        />
+        <line
+          x1="${browRightX - browHalfWidth}"
+          y1="${browBaseY}"
+          x2="${browRightX + browHalfWidth}"
+          y2="${browBaseY}"
+          stroke="${strokeColor}"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          transform="rotate(${rightAngle}, ${browRightX}, ${browBaseY})"
+        />
+      </g>
+    `;
   }
 
-  if (params.sweat) {
-    // Varias gotas, no una sola: cada una en su propia fase y en un lado
-    // distinto de la frente, para que se lea como agotamiento de verdad
-    const drops = [
-      { x: 80, delay: 0, scale: 1 },
-      { x: 20, delay: 0.4, scale: 0.85 },
-      { x: 71, delay: 0.7, scale: 0.7 },
-    ];
-    const sweatOpacity = Math.min(1, params.sweat);
+  // --- ACCESORIOS (Sudor, ZZZ, Tormenta, Garabato, Aliento) ---
+  let accessoriesSvg = '';
 
-    accessoriesSvg += `<g fill="#7FA6D9">`;
-    for (const drop of drops) {
-      const progress = (currentTime * 1.2 + drop.delay) % 1;
-      const dropY = 25 + progress * 7; // 25 = centro Y del path base
-      const opacity = sweatOpacity * Math.sin(progress * Math.PI);
-      if (opacity > 0.01) {
-        // Escala alrededor del propio centro de la gota (80, 25), luego la
-        // mueve a su posición final — si se escala desde el origen del
-        // viewBox, la gota "vuela" en vez de encogerse en su sitio.
-        accessoriesSvg += `
-          <g transform="translate(${drop.x}, ${dropY.toFixed(2)}) scale(${drop.scale}) translate(-80, -25)" opacity="${opacity.toFixed(2)}">
-            <path d="M 76 26 C 76 22 80 20 80 20 C 80 20 84 22 84 26 C 84 28.5 82.2 30 80 30 C 77.8 30 76 28.5 76 26 Z" />
-          </g>
-        `;
-      }
-    }
-    accessoriesSvg += `</g>`;
+  if (params.sweat) {
+    const sweatOpacity = Math.min(1, params.sweat);
+    // Gotitas de sudor que brotan y resbalan por la sien derecha
+    accessoriesSvg += `
+      <g class="wissive-anim-sweat" opacity="${sweatOpacity.toFixed(2)}" fill="#7FA6D9">
+        <path d="M 80 28 C 78 30 77 33 79 35 C 81 37 84 36 84 33 C 84 30 81 28 80 28 Z" />
+        <path d="M 73 22 C 72 23 71.5 25 72.8 26.5 C 74 27.5 76 27 76 25 C 76 23 74 22 73 22 Z" opacity="0.75" />
+      </g>
+    `;
+  }
+
+  if (params.zzz) {
+    // 3 Z's flotando en escalera hacia arriba a la derecha (estilo Snug)
+    const zzzOpacity = Math.min(1, params.zzz);
+    accessoriesSvg += `
+      <g opacity="${zzzOpacity.toFixed(2)}" fill="#383835" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900">
+        <text class="wissive-zzz-1" x="78" y="24" font-size="9" letter-spacing="-0.5">Z</text>
+        <text class="wissive-zzz-2" x="84" y="16" font-size="7.5" letter-spacing="-0.5">z</text>
+        <text class="wissive-zzz-3" x="89" y="9" font-size="6" letter-spacing="-0.5">z</text>
+      </g>
+    `;
   }
 
   if (params.storm) {
@@ -557,211 +592,248 @@ export function buildFace(
     }
   }
 
-  let browsSvg = '';
-  if (params.browY !== 0 || params.browTilt !== 0) {
-    const browBaseY = 32 + params.browY + gazeY * 0.5;
-    const leftAngle = params.browTilt;
-    const rightAngle = -params.browTilt;
+  // --- MEJILLAS O RAYAS ---
+  let cheeksSvg = '';
+  if (params.whiskers) {
+    // Rayas laterales estilo gato/tigre
+    cheeksSvg = `
+      <g stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" opacity="${(params.cheek || 0.7).toFixed(2)}">
+        <line x1="${leftProj.projX - 10}" y1="52" x2="${leftProj.projX - 18}" y2="50" />
+        <line x1="${leftProj.projX - 10}" y1="56" x2="${leftProj.projX - 17}" y2="58" />
+        <line x1="${rightProj.projX + 10}" y1="52" x2="${rightProj.projX + 18}" y2="50" />
+        <line x1="${rightProj.projX + 10}" y1="56" x2="${rightProj.projX + 17}" y2="58" />
+      </g>
+    `;
+  } else if (params.cheek > 0.05) {
+    const cheekRadius = (params.cheekRadius ?? 5.5) * (emphasis ? 1.2 : 1.0);
+    const cheekY = (params.cheekY ?? 54) + gazeY * 0.5;
+    const cheekOpacity = Math.min(1, params.cheek);
 
-    browsSvg = `
-      <g transform="rotate(${leftAngle}, ${leftProj.projX}, ${browBaseY})">
-        <line x1="${leftProj.projX - 6}" y1="${browBaseY}" x2="${leftProj.projX + 6}" y2="${browBaseY}" stroke="${strokeColor}" stroke-width="2.8" stroke-linecap="round" />
-      </g>
-      <g transform="rotate(${rightAngle}, ${rightProj.projX}, ${browBaseY})">
-        <line x1="${rightProj.projX - 6}" y1="${browBaseY}" x2="${rightProj.projX + 6}" y2="${browBaseY}" stroke="${strokeColor}" stroke-width="2.8" stroke-linecap="round" />
-      </g>
+    cheeksSvg = `
+      <ellipse cx="${leftProj.projX - 3.5}" cy="${cheekY}" rx="${(cheekRadius * leftProj.scaleX).toFixed(2)}" ry="${(cheekRadius * 0.7).toFixed(2)}" fill="${cheekColor}" opacity="${cheekOpacity.toFixed(2)}" />
+      <ellipse cx="${rightProj.projX + 3.5}" cy="${cheekY}" rx="${(cheekRadius * rightProj.scaleX).toFixed(2)}" ry="${(cheekRadius * 0.7).toFixed(2)}" fill="${cheekColor}" opacity="${cheekOpacity.toFixed(2)}" />
     `;
   }
 
-  // Boca (24 tipos únicos, 0-24, más el default por mouthCurve)
+  // --- BOCA ---
+  const mouthCenterX = 50 + gazeX * 0.8;
+  const mouthY = (params.mouthY ?? 63) + gazeY * 0.6;
+  const mouthScale = (params.mouthScale ?? 1.0) * (emphasis ? 1.15 : 1.0);
+  const mouthCurve = params.mouthCurve ?? 0;
+  const mouthOpen = params.mouthOpen ?? 0;
   const mouthType = Math.round(params.mouthType ?? 0);
-  const mouthW = Math.max(0, 14 * params.mouthWidth);
-  const mouthX = 50 + gazeX * 0.6;
-  const mouthY = (params.mouthY ?? 63) + gazeY * 0.4;
 
   let mouthSvg = '';
-  switch (mouthType) {
-    case 1: // ovalOpen / O
-      mouthSvg = `<ellipse cx="${mouthX}" cy="${mouthY}" rx="${mouthW}" ry="${mouthW * 1.24}" fill="#B3554A" />`;
-      break;
 
-    case 2: { // zigzag / ~~~~
-      const step = (mouthW * 2) / 4;
-      let d = `M ${mouthX - mouthW} ${mouthY}`;
-      for (let i = 1; i <= 4; i++) d += ` L ${mouthX - mouthW + step * i} ${mouthY + (i % 2 ? 2.83 : 0)}`;
-      mouthSvg = `<path d="${d}" fill="none" stroke="${strokeColor}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />`;
+  const cx = mouthCenterX;
+  const cy = mouthY;
+  const hw = 5.83 * mouthScale;
+
+  switch (mouthType) {
+    case 1: {
+      // Sorpresa: círculo 'O'
+      const r = Math.max(1.8, (2.8 + mouthOpen * 3.5) * mouthScale);
+      mouthSvg = `<ellipse cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" rx="${r.toFixed(2)}" ry="${(r * (1 + mouthOpen * 0.4)).toFixed(2)}" fill="${strokeColor}" />`;
       break;
     }
 
-    case 3: // flatLine / —
-      mouthSvg = `<line x1="${mouthX - mouthW}" y1="${mouthY}" x2="${mouthX + mouthW}" y2="${mouthY}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
+    case 2:
+      // Zigzag / Wavy (~ ~ ~)
+      mouthSvg = `<path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${(cx - hw * 0.5).toFixed(2)} ${(cy - 2.5 * mouthScale).toFixed(2)} ${cx.toFixed(2)} ${cy.toFixed(2)} Q ${(cx + hw * 0.5).toFixed(2)} ${(cy + 2.5 * mouthScale).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
       break;
 
-    case 13: // hollowCircle / o  (Fidge)
-      mouthSvg = `<circle cx="${mouthX}" cy="${mouthY}" r="${mouthW * 2}" fill="none" stroke="${strokeColor}" stroke-width="2.8" />`;
+    case 3:
+      // Línea plana (—)
+      mouthSvg = `<line x1="${(cx - hw).toFixed(2)}" y1="${cy.toFixed(2)}" x2="${(cx + hw).toFixed(2)}" y2="${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
       break;
 
-    case 14: // sin boca (Nima)
+    case 4: {
+      // Dientes apretados [≡] (estilo Knot)
+      const bw = 7.5 * mouthScale;
+      const bh = 4.2 * mouthScale;
+      mouthSvg = `
+        <rect x="${(cx - bw).toFixed(2)}" y="${(cy - bh * 0.5).toFixed(2)}" width="${(bw * 2).toFixed(2)}" height="${bh.toFixed(2)}" rx="2" fill="#FFFFFF" stroke="${strokeColor}" stroke-width="2.2" />
+        <line x1="${(cx - bw).toFixed(2)}" y1="${cy.toFixed(2)}" x2="${(cx + bw).toFixed(2)}" y2="${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="1.8" />
+        <line x1="${(cx - bw * 0.33).toFixed(2)}" y1="${(cy - bh * 0.5).toFixed(2)}" x2="${(cx - bw * 0.33).toFixed(2)}" y2="${(cy + bh * 0.5).toFixed(2)}" stroke="${strokeColor}" stroke-width="1.8" />
+        <line x1="${(cx + bw * 0.33).toFixed(2)}" y1="${(cy - bh * 0.5).toFixed(2)}" x2="${(cx + bw * 0.33).toFixed(2)}" y2="${(cy + bh * 0.5).toFixed(2)}" stroke="${strokeColor}" stroke-width="1.8" />
+      `;
+      break;
+    }
+
+    case 5: {
+      // Sonrisa abierta con dientes superiores
+      const h = (3.5 + mouthOpen * 4.5) * mouthScale;
+      mouthSvg = `
+        <path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cy + h * 2.2).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)} Z" fill="${strokeColor}" />
+        <path d="M ${(cx - hw * 0.8).toFixed(2)} ${cy.toFixed(2)} L ${(cx + hw * 0.8).toFixed(2)} ${cy.toFixed(2)} L ${(cx + hw * 0.7).toFixed(2)} ${(cy + h * 0.6).toFixed(2)} L ${(cx - hw * 0.7).toFixed(2)} ${(cy + h * 0.6).toFixed(2)} Z" fill="#FFFFFF" />
+      `;
+      break;
+    }
+
+    case 6: {
+      // Boca abierta grande feliz (estilo D) con lengua
+      const h = (4 + mouthOpen * 5.5) * mouthScale;
+      mouthSvg = `
+        <g>
+          <path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cy + h * 2.2).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)} Z" fill="${strokeColor}" />
+          <path d="M ${(cx - hw * 0.5).toFixed(2)} ${(cy + h * 1.3).toFixed(2)} Q ${cx.toFixed(2)} ${(cy + h * 0.8).toFixed(2)} ${(cx + hw * 0.5).toFixed(2)} ${(cy + h * 1.3).toFixed(2)} Q ${cx.toFixed(2)} ${(cy + h * 2.1).toFixed(2)} ${(cx - hw * 0.5).toFixed(2)} ${(cy + h * 1.3).toFixed(2)} Z" fill="#FF7B89" />
+        </g>
+      `;
+      break;
+    }
+
+    case 7: {
+      // Cruz 'X'
+      const r = 3.5 * mouthScale;
+      mouthSvg = `
+        <line x1="${(cx - r).toFixed(2)}" y1="${(cy - r).toFixed(2)}" x2="${(cx + r).toFixed(2)}" y2="${(cy + r).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
+        <line x1="${(cx + r).toFixed(2)}" y1="${(cy - r).toFixed(2)}" x2="${(cx - r).toFixed(2)}" y2="${(cy + r).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
+      `;
+      break;
+    }
+
+    case 8: {
+      // Mascarilla médica
+      const mw = 12 * mouthScale;
+      const mh = 7.5 * mouthScale;
+      mouthSvg = `
+        <rect x="${(cx - mw).toFixed(2)}" y="${(cy - mh * 0.4).toFixed(2)}" width="${(mw * 2).toFixed(2)}" height="${mh.toFixed(2)}" rx="3" fill="#FFFFFF" stroke="#8A9BA8" stroke-width="1.8" />
+        <line x1="${(cx - mw).toFixed(2)}" y1="${cy.toFixed(2)}" x2="${(cx + mw).toFixed(2)}" y2="${cy.toFixed(2)}" stroke="#C8D4DE" stroke-width="1.2" />
+      `;
+      break;
+    }
+
+    case 9:
+      // Boca de gato :3 (W)
+      mouthSvg = `
+        <path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${(cx - hw * 0.5).toFixed(2)} ${(cy + 3.2 * mouthScale).toFixed(2)} ${cx.toFixed(2)} ${cy.toFixed(2)} Q ${(cx + hw * 0.5).toFixed(2)} ${(cy + 3.2 * mouthScale).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
+      `;
+      break;
+
+    case 10:
+      // Punto pequeño (•)
+      mouthSvg = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(1.9 * mouthScale).toFixed(2)}" fill="${strokeColor}" />`;
+      break;
+
+    case 11:
+      // Línea diagonal ( / )
+      mouthSvg = `<line x1="${(cx - hw * 0.8).toFixed(2)}" y1="${(cy + 2.5 * mouthScale).toFixed(2)}" x2="${(cx + hw * 0.8).toFixed(2)}" y2="${(cy - 2.5 * mouthScale).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
+      break;
+
+    case 12:
+      // Curva triste / descontento (∩)
+      mouthSvg = `<path d="M ${(cx - hw).toFixed(2)} ${(cy + 2 * mouthScale).toFixed(2)} Q ${cx.toFixed(2)} ${(cy - 4.5 * mouthScale).toFixed(2)} ${(cx + hw).toFixed(2)} ${(cy + 2 * mouthScale).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
+      break;
+
+    case 13:
+      // Círculo hueco 'o'
+      mouthSvg = `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(3.2 * mouthScale).toFixed(2)}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" />`;
+      break;
+
+    case 14:
+      // Sin boca (invisible)
       mouthSvg = '';
       break;
 
-    case 4: // teethClench / [≡]
+    case 15: {
+      // Lengua afuera traviesa (:P)
+      const tw = 3.2 * mouthScale;
+      const th = 4.8 * mouthScale;
       mouthSvg = `
-        <rect x="${mouthX - 10}" y="${mouthY - 4}" width="20" height="8" rx="2" fill="#ffffff" stroke="${strokeColor}" stroke-width="2.5" />
-        <line x1="${mouthX - 10}" y1="${mouthY}" x2="${mouthX + 10}" y2="${mouthY}" stroke="${strokeColor}" stroke-width="1.8" />
-        <line x1="${mouthX - 3}" y1="${mouthY - 4}" x2="${mouthX - 3}" y2="${mouthY + 4}" stroke="${strokeColor}" stroke-width="1.5" />
-        <line x1="${mouthX + 3}" y1="${mouthY - 4}" x2="${mouthX + 3}" y2="${mouthY + 4}" stroke="${strokeColor}" stroke-width="1.5" />
+        <line x1="${(cx - hw).toFixed(2)}" y1="${cy.toFixed(2)}" x2="${(cx + hw).toFixed(2)}" y2="${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
+        <path d="M ${(cx - tw * 0.7).toFixed(2)} ${cy.toFixed(2)} C ${(cx - tw).toFixed(2)} ${(cy + th).toFixed(2)} ${(cx + tw).toFixed(2)} ${(cy + th).toFixed(2)} ${(cx + tw * 0.7).toFixed(2)} ${cy.toFixed(2)} Z" fill="#FF5E7E" stroke="${strokeColor}" stroke-width="1.8" />
+        <line x1="${cx.toFixed(2)}" y1="${cy.toFixed(2)}" x2="${cx.toFixed(2)}" y2="${(cy + th * 0.65).toFixed(2)}" stroke="#D93856" stroke-width="1.2" />
       `;
-      break;
-
-    case 5: // teethGrin / Sonrisa con dientes superiores
-      mouthSvg = `
-        <path d="M ${mouthX - 12} ${mouthY - 2} Q ${mouthX} ${mouthY + 12} ${mouthX + 12} ${mouthY - 2} Z" fill="${strokeColor}" />
-        <path d="M ${mouthX - 10} ${mouthY - 2} L ${mouthX + 10} ${mouthY - 2} L ${mouthX + 8} ${mouthY + 2} L ${mouthX - 8} ${mouthY + 2} Z" fill="#ffffff" />
-      `;
-      break;
-
-    case 6: // wideHappyOpen / D
-      mouthSvg = `<path d="M ${mouthX - 13} ${mouthY - 3} Q ${mouthX} ${mouthY + 14} ${mouthX + 13} ${mouthY - 3} Z" fill="#E87C8A" stroke="${strokeColor}" stroke-width="2.5" />`;
-      break;
-
-    case 7: // crossMouth / X
-      mouthSvg = `
-        <g stroke="${strokeColor}" stroke-width="3.5" stroke-linecap="round">
-          <line x1="${mouthX - 5}" y1="${mouthY - 5}" x2="${mouthX + 5}" y2="${mouthY + 5}" />
-          <line x1="${mouthX - 5}" y1="${mouthY + 5}" x2="${mouthX + 5}" y2="${mouthY - 5}" />
-        </g>
-      `;
-      break;
-
-    case 8: // maskCover / Mascarilla médica
-      mouthSvg = `
-        <g>
-          <line x1="12" y1="${mouthY - 2}" x2="${mouthX - 14}" y2="${mouthY - 2}" stroke="#ffffff" stroke-width="2" />
-          <line x1="12" y1="${mouthY + 4}" x2="${mouthX - 14}" y2="${mouthY + 4}" stroke="#ffffff" stroke-width="2" />
-          <line x1="88" y1="${mouthY - 2}" x2="${mouthX + 14}" y2="${mouthY - 2}" stroke="#ffffff" stroke-width="2" />
-          <line x1="88" y1="${mouthY + 4}" x2="${mouthX + 14}" y2="${mouthY + 4}" stroke="#ffffff" stroke-width="2" />
-          <rect x="${mouthX - 15}" y="${mouthY - 7}" width="30" height="16" rx="3" fill="#ffffff" stroke="${strokeColor}" stroke-width="2.2" />
-        </g>
-      `;
-      break;
-
-    case 9: // wavyWMouth / ~ / 3
-      mouthSvg = `<path d="M ${mouthX - 6} ${mouthY} Q ${mouthX - 3} ${mouthY - 3} ${mouthX} ${mouthY} Q ${mouthX + 3} ${mouthY - 3} ${mouthX + 6} ${mouthY}" fill="none" stroke="${strokeColor}" stroke-width="2.8" stroke-linecap="round" />`;
-      break;
-
-    case 10: // dotMouth / •
-      mouthSvg = `<circle cx="${mouthX}" cy="${mouthY}" r="2.5" fill="${strokeColor}" />`;
-      break;
-
-    case 11: // diagonalLine / /
-      mouthSvg = `<line x1="${mouthX - 6}" y1="${mouthY + 3}" x2="${mouthX + 6}" y2="${mouthY - 3}" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round" />`;
-      break;
-
-    case 12: // frownCurve / ∩
-      mouthSvg = `<path d="M ${mouthX - mouthW} ${mouthY + 4} Q ${mouthX} ${mouthY - 6} ${mouthX + mouthW} ${mouthY + 4}" fill="none" stroke="${strokeColor}" stroke-width="3.2" stroke-linecap="round" />`;
-      break;
-
-    case 15: // tongueOut / :P juguetón
-      mouthSvg = `
-        <path d="M ${mouthX - mouthW} ${mouthY} Q ${mouthX} ${mouthY + 6} ${mouthX + mouthW} ${mouthY}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
-        <path d="M ${mouthX - 3} ${mouthY + 2} Q ${mouthX} ${mouthY + 10} ${mouthX + 3} ${mouthY + 2} Z" fill="#E3536C" />
-      `;
-      break;
-
-    case 16: // smirk / media sonrisa asimétrica
-      mouthSvg = `<path d="M ${mouthX - mouthW} ${mouthY} Q ${mouthX + mouthW * 0.3} ${mouthY} ${mouthX + mouthW} ${mouthY - 5}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
-      break;
-
-    case 17: // triangleMouth / gatito
-      mouthSvg = `<path d="M ${mouthX - 3.5} ${mouthY - 2} L ${mouthX + 3.5} ${mouthY - 2} L ${mouthX} ${mouthY + 4} Z" fill="#E3536C" />`;
-      break;
-
-    case 18: // catThree / >3< — la curva doble típica de las caras kawaii
-      mouthSvg = `<path d="M ${mouthX - 3} ${mouthY - 4} Q ${mouthX + 3} ${mouthY - 4} ${mouthX - 1} ${mouthY} Q ${mouthX + 3} ${mouthY + 4} ${mouthX - 3} ${mouthY + 4}" fill="none" stroke="${strokeColor}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />`;
-      break;
-
-    case 19: // boxOpen / boca cuadrada de sorpresa
-      mouthSvg = `<path d="M ${mouthX - 6} ${mouthY - 4} L ${mouthX + 6} ${mouthY - 4} L ${mouthX + 4} ${mouthY + 5} L ${mouthX - 4} ${mouthY + 5} Z" fill="#B3554A" stroke="${strokeColor}" stroke-width="2" />`;
-      break;
-
-    case 20: // pursed / mmm, boquita apretada
-      mouthSvg = `<ellipse cx="${mouthX}" cy="${mouthY}" rx="3" ry="1.4" fill="none" stroke="${strokeColor}" stroke-width="2.2" />`;
-      break;
-
-    case 21: { // teethRow / sonrisa abierta con fila de dientes marcados
-      const w = mouthW;
-      let bars = '';
-      for (let i = 1; i < 4; i++) {
-        const bx = mouthX - w + ((2 * w) / 4) * i;
-        bars += `<line x1="${bx.toFixed(2)}" y1="${mouthY - 4}" x2="${bx.toFixed(2)}" y2="${mouthY + 4}" stroke="${strokeColor}" stroke-width="1.3" />`;
-      }
-      mouthSvg = `<rect x="${(mouthX - w).toFixed(2)}" y="${mouthY - 4}" width="${(w * 2).toFixed(2)}" height="8" rx="2" fill="#ffffff" stroke="${strokeColor}" stroke-width="2.2" />${bars}`;
       break;
     }
 
-    case 22: // sideTongue / lengua de costado, asimétrica (a diferencia de 15, centrada)
-      mouthSvg = `
-        <path d="M ${mouthX - mouthW} ${mouthY} Q ${mouthX} ${mouthY + 5} ${mouthX + mouthW} ${mouthY}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
-        <path d="M ${mouthX + mouthW - 3} ${mouthY + 2} Q ${mouthX + mouthW + 3} ${mouthY + 6} ${mouthX + mouthW - 1} ${mouthY + 9} Q ${mouthX + mouthW - 5} ${mouthY + 6} ${mouthX + mouthW - 3} ${mouthY + 2} Z" fill="#E3536C" />
-      `;
+    case 16:
+      // Media sonrisa pícara / smirk lateral
+      mouthSvg = `<path d="M ${(cx - hw * 0.4).toFixed(2)} ${cy.toFixed(2)} Q ${(cx + hw * 0.4).toFixed(2)} ${(cy + 0.5).toFixed(2)} ${(cx + hw * 1.1).toFixed(2)} ${(cy - 3.5 * mouthScale).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
       break;
 
-    case 23: // megaTongue / boca abierta con lengua grande, goofy
-      mouthSvg = `
-        <path d="M ${mouthX - mouthW * 1.1} ${mouthY - 3} Q ${mouthX} ${mouthY + 10} ${mouthX + mouthW * 1.1} ${mouthY - 3} Z" fill="#8a2f36" />
-        <ellipse cx="${mouthX}" cy="${mouthY + 4}" rx="${mouthW * 0.6}" ry="4" fill="#E3536C" />
-      `;
+    case 17:
+      // Triángulo gatito ▲
+      mouthSvg = `<path d="M ${(cx - hw * 0.6).toFixed(2)} ${(cy + 2.5 * mouthScale).toFixed(2)} L ${cx.toFixed(2)} ${(cy - 2.5 * mouthScale).toFixed(2)} L ${(cx + hw * 0.6).toFixed(2)} ${(cy + 2.5 * mouthScale).toFixed(2)} Z" fill="${strokeColor}" />`;
       break;
 
-    case 24: // catCup / sonrisa sassy con labio inferior marcado
+    case 18:
+      // Kawaii >3<
+      mouthSvg = `<path d="M ${(cx - hw * 0.6).toFixed(2)} ${(cy - 2.2 * mouthScale).toFixed(2)} Q ${(cx + 1).toFixed(2)} ${cy.toFixed(2)} ${(cx - hw * 0.6).toFixed(2)} ${(cy + 2.2 * mouthScale).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
+      break;
+
+    case 19: {
+      // Caja cuadrada abierta (grito / asombro)
+      const bw = 5 * mouthScale;
+      const bh = 5.5 * mouthScale;
+      mouthSvg = `<rect x="${(cx - bw).toFixed(2)}" y="${(cy - bh * 0.5).toFixed(2)}" width="${(bw * 2).toFixed(2)}" height="${bh.toFixed(2)}" rx="1.5" fill="${strokeColor}" />`;
+      break;
+    }
+
+    case 20:
+      // Boquita apretada / disgusto
+      mouthSvg = `<path d="M ${(cx - hw * 0.7).toFixed(2)} ${(cy - 1).toFixed(2)} Q ${cx.toFixed(2)} ${(cy + 2 * mouthScale).toFixed(2)} ${(cx + hw * 0.7).toFixed(2)} ${(cy - 1).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
+      break;
+
+    case 21: {
+      // Fila completa de dientes blancos
+      const bw = 8 * mouthScale;
+      const bh = 3.8 * mouthScale;
       mouthSvg = `
-        <path d="M ${mouthX - mouthW} ${mouthY} Q ${mouthX} ${mouthY + 7} ${mouthX + mouthW} ${mouthY - 2}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />
-        <ellipse cx="${mouthX + mouthW * 0.3}" cy="${mouthY + 3}" rx="2" ry="1.2" fill="#E3536C" opacity="0.7" />
+        <rect x="${(cx - bw).toFixed(2)}" y="${(cy - bh * 0.5).toFixed(2)}" width="${(bw * 2).toFixed(2)}" height="${bh.toFixed(2)}" rx="2" fill="#FFFFFF" stroke="${strokeColor}" stroke-width="2.2" />
+        <line x1="${(cx - bw * 0.5).toFixed(2)}" y1="${(cy - bh * 0.5).toFixed(2)}" x2="${(cx - bw * 0.5).toFixed(2)}" y2="${(cy + bh * 0.5).toFixed(2)}" stroke="${strokeColor}" stroke-width="1.5" />
+        <line x1="${cx.toFixed(2)}" y1="${(cy - bh * 0.5).toFixed(2)}" x2="${cx.toFixed(2)}" y2="${(cy + bh * 0.5).toFixed(2)}" stroke="${strokeColor}" stroke-width="1.5" />
+        <line x1="${(cx + bw * 0.5).toFixed(2)}" y1="${(cy - bh * 0.5).toFixed(2)}" x2="${(cx + bw * 0.5).toFixed(2)}" y2="${(cy + bh * 0.5).toFixed(2)}" stroke="${strokeColor}" stroke-width="1.5" />
       `;
+      break;
+    }
+
+    case 22: {
+      // Lengua lateral saliendo por la comisura
+      mouthSvg = `
+        <path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cy + 3 * mouthScale).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />
+        <path d="M ${(cx + hw * 0.2).toFixed(2)} ${(cy + 1).toFixed(2)} C ${(cx + hw * 0.2).toFixed(2)} ${(cy + 5 * mouthScale).toFixed(2)} ${(cx + hw * 0.8).toFixed(2)} ${(cy + 5 * mouthScale).toFixed(2)} ${(cx + hw * 0.8).toFixed(2)} ${(cy + 1).toFixed(2)} Z" fill="#FF5E7E" stroke="${strokeColor}" stroke-width="1.5" />
+      `;
+      break;
+    }
+
+    case 23: {
+      // Lengua gigante feliz abierta
+      const h = 5.5 * mouthScale;
+      mouthSvg = `
+        <path d="M ${(cx - hw * 1.1).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cy + h * 2.2).toFixed(2)} ${(cx + hw * 1.1).toFixed(2)} ${cy.toFixed(2)} Z" fill="${strokeColor}" />
+        <ellipse cx="${cx.toFixed(2)}" cy="${(cy + h * 1.4).toFixed(2)}" rx="${(hw * 0.65).toFixed(2)}" ry="${(h * 0.65).toFixed(2)}" fill="#FF6584" />
+      `;
+      break;
+    }
+
+    case 24:
+      // Smirk taza (sonrisa de lado curvada en U asimétrica)
+      mouthSvg = `<path d="M ${(cx - hw * 0.5).toFixed(2)} ${(cy - 1).toFixed(2)} Q ${(cx - 1).toFixed(2)} ${(cy + 4 * mouthScale).toFixed(2)} ${(cx + hw * 0.9).toFixed(2)} ${(cy + 1).toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
       break;
 
     case 0:
     default:
-      // smileCurve estándar
-      if (params.mouthCurve === 0) {
-        mouthSvg = `<line x1="${mouthX - mouthW}" y1="${mouthY}" x2="${mouthX + mouthW}" y2="${mouthY}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
+      if (Math.abs(mouthCurve) < 0.05 && mouthOpen < 0.05) {
+        // Línea neutra simple
+        mouthSvg = `<line x1="${(cx - hw).toFixed(2)}" y1="${cy.toFixed(2)}" x2="${(cx + hw).toFixed(2)}" y2="${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
+      } else if (mouthOpen > 0.1) {
+        // Boca abierta dinámica con curvatura
+        const h = (mouthOpen * 5 + 1.5) * mouthScale;
+        const cyPeak = cy + mouthCurve * 5 * mouthScale;
+        mouthSvg = `<path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cyPeak + h).toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${(cyPeak - h * 0.3).toFixed(2)} ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Z" fill="${strokeColor}" stroke="${strokeColor}" stroke-width="1.5" stroke-linejoin="round" />`;
       } else {
-        const mouthControlY = mouthY + params.mouthCurve * 14;
-        mouthSvg = `<path d="M ${mouthX - mouthW} ${mouthY} Q ${mouthX} ${mouthControlY.toFixed(2)} ${mouthX + mouthW} ${mouthY}" fill="none" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" />`;
+        // Arco de sonrisa/tristeza dinámico
+        const cyPeak = cy + mouthCurve * 5 * mouthScale;
+        mouthSvg = `<path d="M ${(cx - hw).toFixed(2)} ${cy.toFixed(2)} Q ${cx.toFixed(2)} ${cyPeak.toFixed(2)} ${(cx + hw).toFixed(2)} ${cy.toFixed(2)}" stroke="${strokeColor}" stroke-width="${STROKE_W}" stroke-linecap="round" fill="none" />`;
       }
       break;
   }
 
-  // Mejillas o rayas de sonrojo
-  const cheekOpacity = Math.max(0, Math.min(1, params.cheek));
-  let cheeksSvg = '';
-  if (params.blushStripes) {
-    cheeksSvg = `
-      <g stroke="#E3536C" stroke-width="2" opacity="0.75" stroke-linecap="round">
-        <line x1="20" y1="52" x2="24" y2="58" />
-        <line x1="24" y1="52" x2="28" y2="58" />
-        <line x1="28" y1="52" x2="32" y2="58" />
-        <line x1="68" y1="52" x2="72" y2="58" />
-        <line x1="72" y1="52" x2="76" y2="58" />
-        <line x1="76" y1="52" x2="80" y2="58" />
-      </g>
-    `;
-  } else if (cheekOpacity > 0.01) {
-    cheeksSvg = `
-      <ellipse cx="${27 + gazeX * 0.4}" cy="${56 + gazeY * 0.4}" rx="6" ry="4" fill="${cheekColor}" opacity="${cheekOpacity.toFixed(2)}" />
-      <ellipse cx="${73 + gazeX * 0.4}" cy="${56 + gazeY * 0.4}" rx="6" ry="4" fill="${cheekColor}" opacity="${cheekOpacity.toFixed(2)}" />
-    `;
-  }
-
-  const groupTransform = [
-    `translate(${(params.shiftX ?? 0).toFixed(2)}, ${params.bob.toFixed(2)})`,
-    flipX ? 'translate(100, 0) scale(-1, 1)' : '',
-    emphasis ? 'translate(50, 50) scale(1.1) translate(-50, -50)' : '',
-  ].filter(Boolean).join(' ');
+  const groupTransform = flipX ? 'translate(100, 0) scale(-1, 1)' : '';
 
   return `
-    <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+    <svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <style>
           @keyframes wissive-zzz-loop {
@@ -781,6 +853,9 @@ export function buildFace(
             0% { transform: translateY(0px); opacity: 0.4; }
             50% { transform: translateY(5px); opacity: 0.95; }
             100% { transform: translateY(9px); opacity: 0.15; }
+          }
+          .wissive-silhouette-path {
+            transition: fill 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           }
           .wissive-zzz-1 { animation: wissive-zzz-loop 3s cubic-bezier(0.33, 0, 0.25, 1) infinite 0s; transform-box: fill-box; transform-origin: center; }
           .wissive-zzz-2 { animation: wissive-zzz-loop 3s cubic-bezier(0.33, 0, 0.25, 1) infinite -1s; transform-box: fill-box; transform-origin: center; }

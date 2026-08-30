@@ -51,6 +51,11 @@ export const I18N_EN: [string, string][] = [
   ['.sidebar-nav-group a[href="#movil"]', 'Mobile & touch'],
   ['.sidebar-nav-group a[href="#frameworks"]', 'Frameworks'],
   ['.sidebar-nav-group a[href="#rendimiento"]', 'Performance (QA)'],
+  ['.sidebar-nav-group a[href="#estudio-animacion"]', 'Animation Studio'],
+  ['#tab-btn-studio', 'Studio'],
+  ['.topnav-links a[data-tab-target="studio"]', 'Studio'],
+  ['#estudio-animacion h2', 'Animation Studio & Montage'],
+  ['#estudio-animacion p', 'Create your own custom animation sequences by composing expressions, states, and timings on the timeline. Drag the playhead to preview in real-time and export ready-to-use code for your project.'],
   ['.sidebar-nav-group a[href="#creditos"]', 'Credits'],
 
   ['#introduccion h2', 'Introduction'],
