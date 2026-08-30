@@ -30,6 +30,7 @@ export const I18N_EN: [string, string][] = [
   ['.mobile-toc a[href="#estados"]', 'States'],
   ['.mobile-toc a[href="#sonido"]', 'Sound'],
   ['.mobile-toc a[href="#accesibilidad"]', 'Accessibility'],
+  ['.mobile-toc a[href="#movil"]', 'Mobile & touch'],
   ['.mobile-toc a[href="#frameworks"]', 'Frameworks'],
   ['.mobile-toc a[href="#rendimiento"]', 'Performance'],
 
@@ -47,6 +48,7 @@ export const I18N_EN: [string, string][] = [
   ['.sidebar-nav-group a[href="#estados"]', 'Interaction states'],
   ['.sidebar-nav-group a[href="#sonido"]', 'Sound'],
   ['.sidebar-nav-group a[href="#accesibilidad"]', 'Accessibility'],
+  ['.sidebar-nav-group a[href="#movil"]', 'Mobile & touch'],
   ['.sidebar-nav-group a[href="#frameworks"]', 'Frameworks'],
   ['.sidebar-nav-group a[href="#rendimiento"]', 'Performance (QA)'],
   ['.sidebar-nav-group a[href="#creditos"]', 'Credits'],
@@ -167,6 +169,13 @@ export const I18N_EN: [string, string][] = [
 
   ['#accesibilidad h2', 'Accessibility'],
   ['#accesibilidad > p', `<code>role="img"</code> + dynamic <code>aria-label</code> based on the current emotion and state. Keyboard navigable (<code>tabindex</code>, Enter/Space act as click). Respects the operating system's <code>prefers-reduced-motion</code>. Stroke/fill contrast verified ≥3:1 (WCAG) across all 14 emojis.`],
+
+  ['#movil h2', 'Mobile & Touch Screens'],
+  ['#movil > p', 'On mobile devices there is no persistent cursor or <code>:hover</code> state. Wissive automatically detects touch environments (<code>isTouchDevice()</code> / <code>supportsHover()</code>) and optimizes interactions:'],
+  ['#movil li:nth-child(1)', '<strong>Battery & CPU Savings:</strong> Disables continuous mouse proximity calculations on purely touch screens.'],
+  ['#movil li:nth-child(2)', '<strong>Clean Touch Handling:</strong> <code>touchstart</code> and <code>touchend</code> trigger and restore expressions instantly, avoiding sticky hover states.'],
+  ['#movil li:nth-child(3)', '<strong>Touch Drag Physics:</strong> <code>DragPhysics</code> supports direct touch gestures with inertia and bounce without blocking page scrolling.'],
+  ['#movil li:nth-child(4)', '<strong>Autonomous Micro-life:</strong> With <code>autonomousStates: true</code>, emojis blink, glance around, and change emotions on their own without requiring user interaction.'],
 
   ['#frameworks h2', 'Framework integration'],
   ['#frameworks > p', `Official wrappers for React, Vue, and Astro (<code>wissive/react</code>, <code>wissive/vue</code>, <code>wissive/astro</code>) — for React/Vue they package the usual <code>createEmoji()</code> + <code>destroy()</code> pattern; for Astro there's no timing problem to solve (none needed), they just save repeating the <code>&lt;script&gt;</code> if you use the emoji on several pages. Pick one — the block below remembers it.`],

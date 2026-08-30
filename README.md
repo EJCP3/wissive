@@ -149,6 +149,17 @@ import Wissive from 'wissive/astro';
 
 ---
 
+## Optimización para Móvil y Pantallas Táctiles
+
+Wissive está diseñado para funcionar de manera nativa y fluida tanto en escritorio como en dispositivos móviles:
+
+- **Detección de Hardware (`isTouchDevice()` / `supportsHover()`):** Desactiva listeners globales pesados de proximidad en pantallas táctiles (`hover: none`) para ahorrar batería y CPU.
+- **Gestión de Toque sin Estados Fantasma:** `touchstart` y `touchend` gestionan limpiamente el ciclo de interacción sin dejar estados `:hover` pegados.
+- **Arrastre Táctil (`Drag & Drop`):** Soporta gestos directos con el dedo con deformación elástica (*Squash & Stretch*) sin bloquear el scroll general de la página.
+- **Micro-vida Autónoma:** Mediante parpadeos aleatorios (`scheduleNextBlink`), miradas espontáneas (`scheduleNextGlance`) y cambios emocionales (`autonomousStates: true`), los emojis se mantienen vivos y expresivos sin requerir movimiento de ratón.
+
+---
+
 ## API Reference
 
 ### `createEmoji(name, options)`

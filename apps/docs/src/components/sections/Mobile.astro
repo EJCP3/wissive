@@ -1,0 +1,30 @@
+---
+import CodeBlock from '../CodeBlock.astro';
+---
+
+<section id="movil" class="doc-section">
+  <h2>Móvil y Pantallas Táctiles</h2>
+  <p>
+    En dispositivos móviles no existe el cursor continuo ni el estado <code>:hover</code>.
+    Wissive detecta automáticamente el entorno táctil (<code>isTouchDevice()</code> / <code>supportsHover()</code>)
+    y optimiza el comportamiento:
+  </p>
+  <ul style="margin: 1rem 0 1.25rem 1.5rem; line-height: 1.7; color: var(--text-sub);">
+    <li><strong>Ahorro de batería y CPU:</strong> Desactiva los cálculos continuos de proximidad de ratón en pantallas puramente táctiles.</li>
+    <li><strong>Gestión de toques limpia:</strong> Los eventos <code>touchstart</code> y <code>touchend</code> activan y restauran las expresiones al instante, evitando estados "hover" pegados.</li>
+    <li><strong>Física de arrastre táctil:</strong> <code>DragPhysics</code> soporta gestos táctiles directos con inercia y rebote sin interferir con el scroll del navegador.</li>
+    <li><strong>Micro-vida autónoma:</strong> Con <code>autonomousStates: true</code>, los emojis parpadean, exploran miradas y cambian de emoción por sí mismos sin requerir interacción del usuario.</li>
+  </ul>
+  <CodeBlock code={`import { createEmoji, isTouchDevice, supportsHover } from 'wissive';
+
+// Detectar entorno si necesitas lógica condicional
+console.log('¿Dispositivo táctil?:', isTouchDevice());
+
+// Instancia optimizada para móvil y escritorio
+const emoji = createEmoji('mochi', {
+  target: document.getElementById('emoji-slot'),
+  draggable: true,         // arrastrable con el dedo o ratón
+  autonomousStates: true,  // expresa micro-vida sin necesidad de hover
+  sound: true,             // feedback sonoro al tocar
+});`} />
+</section>
