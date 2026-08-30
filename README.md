@@ -6,7 +6,7 @@
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/wissive?color=10b981)](https://bundlephobia.com/package/wissive)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Sitio web y Documentación en vivo:** [https://wissive-docs.vercel.app/](https://wissive-docs.vercel.app/)  
+**Sitio web y Documentación en vivo:** [https://wissive-docs.vercel.app/](https://wissive.vercel.app/)  
 **Paquete en NPM:** [https://www.npmjs.com/package/wissive](https://www.npmjs.com/package/wissive)  
 **Repositorio en GitHub:** [https://github.com/EJCP3/wissive](https://github.com/EJCP3/wissive)
 
