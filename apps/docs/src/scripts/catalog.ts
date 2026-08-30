@@ -76,7 +76,7 @@ export function initCatalog(instances: Record<string, any>): void {
 
       const slot = item.querySelector<HTMLElement>(`#slot-${name}`);
       if (slot) {
-        instances[name] = createEmoji(name, { target: slot, size: 120 });
+        instances[name] = createEmoji(name, { target: slot, size: 120, ambientParticles: false });
       }
 
       const sub = item.querySelector<HTMLElement>('.emoji-sublabel');

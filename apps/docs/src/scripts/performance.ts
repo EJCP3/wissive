@@ -65,6 +65,7 @@ export function initPerformanceStressTest(): void {
         interactive: true,
         sound: !isMuted,
         autonomousStates: true,
+        ambientParticles: false,
       });
       activeInstances.push(inst);
     }

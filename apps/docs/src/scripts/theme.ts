@@ -57,6 +57,7 @@ export function initBrandEmoji(): void {
     interactive: true,
     sound: false,
     autonomousStates: true,
+    ambientParticles: false,
   });
 
   const brandLink = document.querySelector('.brand');
@@ -94,6 +95,7 @@ export function initTheme(): void {
       interactive: false,
       sound: false,
       autonomousStates: true,
+      ambientParticles: false,
     });
 
     themeToggle!.setAttribute(

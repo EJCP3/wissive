@@ -46,7 +46,7 @@ export function initHeroCarousel(): void {
     const slot = document.createElement('div');
     slot.className = 'hero-try-item';
     heroRow.appendChild(slot);
-    createEmoji(name, { target: slot, size: 68, draggable: false });
+    createEmoji(name, { target: slot, size: 68, draggable: false, ambientParticles: false });
 
     if (heroRandomOptions.has(name)) {
       slot.title = RANDOM_TOOLTIP_TEXT[currentLang as keyof typeof RANDOM_TOOLTIP_TEXT] || RANDOM_TOOLTIP_TEXT.es;
